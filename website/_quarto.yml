@@ -13,9 +13,9 @@ project:
 website:
   title: "DSCI 571"
   description: "Slides for DSCI 571"
-  site-url: https://ubc-mds.github.io/DSCI-571-slides/
+  site-url: https://ubc-mds.github.io/DSCI_571-slides/
 
-  repo-url: https://github.com/UBC-MDS/DSCI-571-slides/
+  repo-url: https://github.com/UBC-MDS/DSCI_571-slides/
   repo-subdir: website
 
   navbar:

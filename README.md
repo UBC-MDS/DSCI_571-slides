@@ -6,7 +6,7 @@ This repository contains the slides for DSCI 571 for 2026–27. The instructor f
 ## Automatic publishing
 
 The [Publish slides workflow](.github/workflows/publish.yml) renders the Quarto
-website and deploys it to <https://ubc-mds.github.io/DSCI-571-slides/> on every
+website and deploys it to <https://ubc-mds.github.io/DSCI_571-slides/> on every
 push to `main`. You can also start it from **Actions → Publish slides → Run
 workflow**. No manual `quarto publish` command is needed.
 
@@ -46,7 +46,7 @@ remains available in the HTML slides.
 
 ### One-time GitHub setup
 
-In the repository's [Settings → Pages](https://github.com/UBC-MDS/DSCI-571-slides/settings/pages),
+In the repository's [Settings → Pages](https://github.com/UBC-MDS/DSCI_571-slides/settings/pages),
 set **Build and deployment → Source** to **GitHub Actions**. Commit and push the
 workflow, website sources and assets, and the complete `website/_freeze/`
 directory. The workflow uses GitHub's built-in token; no personal access token
