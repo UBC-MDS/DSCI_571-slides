@@ -1,0 +1,517 @@
+---
+title: "DSCI 571 Lecture 4: Preprocessing, Pipelines, and Column Transformers"
+author: "Varada Kolhatkar"
+description: "Imputation, scaling, encoding, pipelines, and column transformers"
+description-short: "Preprocessing, pipelines, and column transformers"
+format:
+  revealjs:
+    html-math-method: mathjax
+    slide-number: true
+    slide-level: 2
+    theme:
+      - slides.scss
+      - lecture-02.scss
+    center: true
+    logo: img/UBC-CS-logo.png
+    resources:
+      - data/
+      - img/
+execute:
+  echo: false
+  warning: false
+  message: false
+editor:
+  render-on-save: true
+---
+
+
+## Focus on the breath!
+
+![](img/inukshuk.jpeg){.nostretch fig-align="center" width="500px"}
+
+## Announcements
+
+<!-- Add DSCI 571 announcements here. -->
+
+## Supervised ML workflow
+
+```{mermaid}
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'sans-serif', 'fontSize': '32px', 'primaryColor': '#ffffff', 'primaryTextColor': '#17212b', 'primaryBorderColor': '#419599', 'lineColor': '#52616b'}}}%%
+flowchart LR
+    A["Define task<br/>Collect data"] --> B["Split data"]
+    B --> C["Explore <br/> training data <br/> Prepare features"]
+    C --> D["Compare <br>pipelines<br/>with CV"]
+    D --> E["Refit <br/> chosen pipeline<br/>Evaluate once"]
+    B -->|Reserve test set| E
+    E --> F["Deploy<br/>Monitor"]
+    style C fill:#d9eded,stroke:#287f83,stroke-width:3px
+```
+
+**Next two lectures:** how do we get data into a useful representation?
+
+::: {.notes}
+Let's place today's topic in the workflow we already know. We define a prediction task, collect data, and reserve a test set. Then we explore the training data and compare possible models using cross-validation. Once we've made our choices, we refit on all the training data and evaluate on the test set.
+
+For the next two lectures, we're focusing on this highlighted box: preparing the features. So far, we've mostly assumed that we can hand a feature matrix to a model. What happens when that matrix contains missing values, very different scales, or strings?
+
+One detail to keep in mind: this picture shows the stages of a project. It doesn't mean we fit preprocessing once before cross-validation. We'll see why learning the preprocessing has to happen again within each fold.
+:::
+
+## iClicker: where does the time go? {.slide-your-turn}
+
+**Take a guess:** how much of an ML project's time might go into data preparation and transformation?
+
+(A) Less than 20%
+(B) 20–40%
+(C) More than 40%
+(D) None; most time goes into model building
+
+::: {.fragment}
+Often a **substantial share**: understanding, cleaning, and transforming data takes time. The exact proportion varies by project.
+:::
+
+<center><small>[Inspired by Google's ML Crash Course](https://developers.google.com/machine-learning/crash-course/numerical-data)</small></center>
+
+::: {.notes}
+Before we get into the details, take a guess. How much of a project's time do you think might go into preparing and transforming data? Choose the option closest to your expectation.
+
+There isn't a fixed percentage that applies to every project. The takeaway is that understanding and preparing data can take a substantial share of the work. Google's course emphasizes that practitioners often spend more time on this than on building models.
+
+Think about the assignments so far. Have you spent more time calling fit, or figuring out what the data contains and how to use it?
+:::
+
+## Remember this from last lecture? {.smaller}
+
+- You're trying to find a suitable date based on age and social media followers. 
+- You are 30 years old and have 250 followers.
+
+| Person | Age | # Followers | Euclidean Distance Calculation  | Distance    |
+|--------|-----|-------------|---------------------------------|-------------|
+| A      | 25  | 400         | $\sqrt{5^2 + 150^2}$            | 150.08      |
+| B      | 27  | 300         |  $\sqrt{3^2 + 50^2}$            | 50.09       |
+| C      | 30  | 500         |  $\sqrt{0^2 + 250^2}$           | 250.00      |
+| D      | 60  | 250         |  $\sqrt{30^2 + 0^2}$            | 30.00       |
+
+Based on the distances, the two nearest neighbors (2-NN) are:
+
+- **Person D** (Distance: 30.00)
+- **Person B** (Distance: 50.09)
+
+What's the problem here?
+
+## Which models are affected? {.slide-your-turn}
+
+In the age-and-followers example, which models are sensitive to the **relative scales of the two features**? Why?
+
+- **Decision trees**
+- **$k$-NN**
+- **RBF SVM**
+
+::: {.fragment}
+**$k$-NN and RBF SVM** use distances, so feature scales affect their neighbours or similarities.
+
+**Decision trees** split on one feature at a time; changing units allows an equivalent split threshold.
+:::
+
+## Same people, different units {.slide-your-turn}
+
+Suppose we express age in **months instead of years**, leaving follower counts unchanged.
+
+| Person | Distance using years | Distance using months |
+|---|---|---|
+| B | $\sqrt{3^2 + 50^2} \approx 50.09$ | $\sqrt{36^2 + 50^2} \approx 61.61$ |
+| D | $\sqrt{30^2 + 0^2} = 30$ | $\sqrt{360^2 + 0^2} = 360$ |
+
+**Which of these two people is closer now?**
+
+::: {.fragment}
+B replaces D as the closer person. **Only the units changed, not the people.**
+:::
+
+::: {.notes}
+Let's compare just B and D. In years, D is closer: the age difference contributes 30, while B's difference in follower counts is already 50.
+
+Now suppose we record everyone's age in months, including our own. B's age difference becomes 36 months, and D's becomes 360 months. Before looking at the answer, which of these two people is closer now?
+
+It's B. Nothing about either person changed. We only changed the unit used for age, and that changed its influence on distance. If we redo the calculation for all four people, the two nearest neighbours become B and A. We would like our choice of units not to decide the result for us.
+:::
+
+## Why data representation matters {.smaller}
+
+**Models operate on the representation we give them.**
+
+- **Units:** age in years $\to$ months changes distances without changing the people.
+- **Scales:** ages might range from 18–60, but follower counts from 10–1000. Differences in follower counts can dominate distances.
+- **Missing entries:** someone leaves their age blank (`age = NaN`). How do we calculate their distance?
+- **Category codes:** suppose we add a favourite hobby: hiking = 0, reading = 1, gaming = 2. Why should hiking be "closer" to reading than gaming?
+
+::: {.notes}
+The model sees the numbers we give it. It doesn't know that one column represents years and another represents follower counts.
+
+We've just seen the units problem. There's also a scale problem even if we never change units: suppose ages range from 18 to 60, while follower counts range from 10 to 1000. Differences in follower counts can overwhelm differences in age. What matters for distance is the size of those differences, not simply whether a column contains large numbers.
+
+Now imagine someone leaves their age blank. What should KNN use for that coordinate when calculating distance?
+
+Or suppose we add favourite hobby to the profile. We could assign hiking zero, reading one, and gaming two. But those codes make hiking closer to reading than to gaming. Did we learn that relationship, or did we accidentally invent it?
+
+These are representation choices. We need ways to handle them, but preprocessing doesn't automatically tell us which features are useful or guarantee better predictions.
+:::
+
+## Today's big questions {.slide-goals}
+
+- What **representation** does the model need?
+- What do transformations **learn**, and which data may they learn from?
+- How do we combine **preprocessing and prediction** safely?
+- How does `ColumnTransformer` combine **different feature groups**?
+
+## Class demo: restaurant survey responses
+
+[Open the preprocessing demo](https://github.com/UBC-CS/cpsc330-2026W1/blob/main/content/classes/varada/lecture-05-06-preprocessing-demo.ipynb)
+
+**Task:** infer a respondent's `like` / `dislike` label from their completed survey.
+
+As we work, watch for:
+
+1. What does each transformation change?
+2. What does `fit` learn?
+3. Which rows are allowed to influence that learning?
+
+::: {.notes}
+Let's open the restaurant survey demo. Each row is a completed survey, and we're trying to infer that respondent's like or dislike label from the other fields. We're not predicting whether someone will enjoy a restaurant before visiting it.
+
+As we work through the notebook, keep asking three questions: what changes in the data, what does fit learn, and which rows should it be allowed to learn from?
+
+We'll start with numeric features, handle missing values and scales, and see why evaluating those steps requires a pipeline. Then we'll look at categorical and ordered features. We'll then combine the feature groups with ColumnTransformer and cross-validate the complete pipeline. Our final test set will stay reserved.
+:::
+
+## Recap: choosing transformations {.slide-summary .smaller}
+
+| Problem | Demo features | Transformation |
+|---|---|---|
+| Missing values | `price`, `food_type`, `noise_level` | Impute with a training median or most frequent value |
+| Different scales | `age`, `n_people`, `price` | Standardize numeric features |
+| Unordered categories | `food_type`, `north_america` | One-hot encode |
+| Ordered categories | `noise_level` | Ordinally encode with an explicit order |
+
+**Choose the representation to match the meaning of the feature.**
+
+::: {.notes}
+Let's connect what we just did to the problems we started with. For missing numeric values, we used the training median. For missing categories, we used the most frequent training value. These are replacement rules; they don't recover the value that was actually missing.
+
+For age, party size, and price, we standardized the features so their numerical scales wouldn't dominate distance. For food type and north_america, one-hot encoding avoided inventing an order.
+
+Noise level was different: no music, low, medium, high, and crazy loud have a meaningful order, so we supplied that order explicitly. The integer codes still assume equal spacing for KNN, which is a modelling choice.
+
+Remember the unseen cuisine in a validation fold? Setting handle_unknown to ignore let the encoder represent it with zeros for that feature's category indicators. It kept the representation usable, but didn't teach the model what that cuisine means.
+:::
+
+## Transformers and predictive estimators {.smaller}
+
+| | Transformer | Predictive estimator |
+|---|---|---|
+| Purpose | Change feature representation | Predict a target |
+| Learn | `fit(X)` | `fit(X, y)` |
+| Apply | `transform(X)` | `predict(X)` |
+| Examples | Imputer, scaler, encoder | $k$-NN, SVC |
+
+**Both are estimators:** both implement `fit`.
+
+`fit_transform` fits and transforms the same data. On unseen data, **transform only**.
+
+::: {.notes}
+The imputer, scaler, and encoders all followed the same pattern. Fit learns something about the data; transform uses what was learned to produce a new feature representation.
+
+The imputer learns replacement values. The scaler learns means and standard deviations. The one-hot encoder learns which categories are present. For ordinal encoding, we supplied the intended order ourselves.
+
+KNN also has fit, but its next job is different: predict produces target labels, rather than transformed features. Both transformers and predictors are estimators in sklearn terminology.
+
+Fit_transform combines fitting and transforming the same data. For unseen rows, we only transform with the fitted transformer. Some transformers can also use the target, but today's examples don't need it.
+:::
+
+## A pipeline combines preprocessing and prediction
+
+```{mermaid}
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'sans-serif', 'fontSize': '32px', 'primaryColor': '#ffffff', 'primaryTextColor': '#17212b', 'primaryBorderColor': '#419599', 'lineColor': '#52616b'}}}%%
+flowchart LR
+    A["Raw numeric <br>features"] --> B["Imputer"] --> C["Scaler"] --> D["KNN"] --> E["Predictions"]
+    style B fill:#d9eded,stroke:#287f83
+    style C fill:#d9eded,stroke:#287f83
+```
+
+| During training | On unseen data |
+|---|---|
+| Imputer: **fit and transform** | Imputer: **transform** |
+| Scaler: **fit and transform** | Scaler: **transform** |
+| KNN: **fit** with labels | KNN: **predict** |
+
+**A sequence of preprocessing steps followed by a predictive estimator.**
+
+::: {.notes}
+This is the numeric pipeline from the demo. Follow the arrows: raw numeric features go into the imputer, then the scaler, then KNN.
+
+During training, the imputer learns the medians and fills the missing entries. The scaler learns from that imputed matrix and scales it. KNN then fits using the resulting features and the training labels.
+
+On a new row, we follow the same path, but we don't learn anything again. We fill missing entries using the stored medians, apply the stored means and scales, and ask KNN for a prediction.
+
+So we pass the original numeric columns to the pipeline. The pipeline handles the transformations in the right order. It's a sequence of preprocessing steps followed by a predictive estimator.
+:::
+
+## The golden rule in preprocessing {background-color="#fce8e6"}
+
+**Never call `fit` on the validation portion for preprocessing or the model.**
+
+- Learn medians, scales, and categories from **that fold's training rows**.
+- Apply the fitted transformations to its validation rows.
+- Pass the **whole pipeline and raw features** to cross-validation.
+
+Keeping the final test set separate is necessary, but does not prevent leakage between CV folds.
+
+::: {.notes}
+Recall the code that ran successfully but gave us an incorrect evaluation. We imputed and scaled all the training rows, then passed the result to cross-validation. What had the future validation rows already influenced? The medians, means, and standard deviations.
+
+We saw the same problem when we learned the one-hot categories before making the folds. We hadn't used the validation labels, but we had still learned from the validation features.
+
+The repair is to pass the whole pipeline and the raw features to cross-validation. Each fold gets a fresh pipeline, fitted using only that fold's training rows. The validation rows are transformed using what those training rows taught us.
+
+Keeping the test set separate doesn't fix leakage inside cross-validation. And a pipeline still can't protect us if we repeatedly look at test scores to choose our model.
+:::
+
+## Back to the full workflow
+
+```{mermaid}
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'sans-serif', 'fontSize': '32px', 'primaryColor': '#ffffff', 'primaryTextColor': '#17212b', 'primaryBorderColor': '#419599', 'lineColor': '#52616b'}}}%%
+flowchart LR
+    A["Define task<br/>Collect data"] --> B["Split data"]
+    B --> C["Explore <br/> training data <br/> Prepare features"]
+    C --> D["Compare <br>pipelines<br/>with CV"]
+    D --> E["Refit <br/> chosen pipeline<br/>Evaluate once"]
+    B -->|Reserve test set| E
+    E --> F["Deploy<br/>Monitor"]
+    style C fill:#d9eded,stroke:#287f83,stroke-width:3px
+```
+
+**Inside each CV fold:** raw features $\to$ fitted preprocessing $\to$ fitted classifier.
+
+**Cross-validate the whole pipeline:** each fold fits preprocessing and the model using only its training rows. This keeps validation data out of `fit` and preserves the golden rule.
+
+::: {.notes}
+Here's the workflow again. We can now say what happens inside the preparation box: we decide how to handle missing entries, scales, and categories.
+
+When we compare a candidate pipeline, each CV fold learns its own preprocessing from its training rows, then fits the classifier on those transformed rows. Its validation rows only receive the learned transformations. That's how the evaluation respects the golden rule.
+
+In today's demo, we stopped at model comparison. We haven't used the final test set. Once our choices are settled, the next step is to refit the selected pipeline on all training rows and evaluate it on the reserved test set. Deployment and monitoring come after that.
+:::
+
+## Why `ColumnTransformer`?
+
+In the demo, we trained on feature groups separately:
+
+- **Numeric:** impute $\to$ scale
+- **Categorical:** impute $\to$ one-hot encode
+- **Ordinal:** impute $\to$ encode with a specified order
+
+**How do we combine these transformed columns for one classifier?**
+
+::: {.fragment}
+`ColumnTransformer` applies different transformations to selected columns and joins the results into one feature matrix.
+:::
+
+::: {.notes}
+We now have several useful preprocessing sequences. Numeric columns need imputation and scaling. Unordered categories need imputation and one-hot encoding. Noise level needs imputation and an explicitly ordered encoding.
+
+In the demo, we tried these feature groups separately. But we'd like one classifier to use all of them. How can we send each group through the appropriate transformations, then join the resulting columns?
+
+That's the job of ColumnTransformer. A pipeline connects steps in sequence; ColumnTransformer applies different preprocessing to different columns and combines their outputs.
+
+Each branch will contain preprocessing, and the combined feature matrix will go to one shared classifier. Next we'll build that column transformer and put it inside an outer pipeline.
+:::
+
+## Different columns need different transformations
+
+| Feature group | Columns | Preprocessing |
+|---|---|---|
+| Numeric | `age`, `n_people`, `price` | Impute $\to$ scale |
+| Unordered categories | `food_type`, `north_america` | Impute $\to$ one-hot encode |
+| Ordered category | `noise_level` | Impute $\to$ ordinal encode |
+
+**How do we combine these into one feature matrix?**
+
+## `ColumnTransformer` combines feature groups
+
+![](img/column-transformer.png){.nostretch fig-align="center"}
+
+**Different columns $\to$ their own transformations $\to$ one feature matrix.**
+
+::: {.notes}
+A pipeline connects steps in sequence. A column transformer sends selected columns through different branches and concatenates the resulting features. A branch may itself be a pipeline, such as imputation followed by scaling. The combined matrix goes to one shared classifier.
+:::
+
+## Build the numeric and categorical branches
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+numeric_pipe = make_pipeline(
+    SimpleImputer(strategy="median"),
+    StandardScaler(),
+)
+
+categorical_pipe = make_pipeline(
+    SimpleImputer(strategy="most_frequent"),
+    OneHotEncoder(handle_unknown="ignore"),
+)
+```
+
+Each branch is a **sequence of transformations** for one feature group.
+
+## Build the ordinal branch
+
+```python
+from sklearn.preprocessing import OrdinalEncoder
+
+noise_order = ["no music", "low", "medium", "high", "crazy loud"]
+
+ordinal_pipe = make_pipeline(
+    SimpleImputer(strategy="most_frequent"),
+    OrdinalEncoder(categories=[noise_order]),
+)
+```
+
+We **supply the meaningful order** of noise levels.
+
+::: {.notes}
+This is the same order used earlier in the survey demo. Imputation learns the most frequent training value. We supply the category order rather than asking the encoder to infer it. The integer codes still impose equal spacing for a distance-based model; that is a modelling choice.
+:::
+
+## `ColumnTransformer` syntax
+
+```python
+from sklearn.compose import ColumnTransformer
+
+preprocessor = ColumnTransformer([
+    ("num", numeric_pipe, ["age", "n_people", "price"]),
+    ("cat", categorical_pipe, ["food_type", "north_america"]),
+    ("ord", ordinal_pipe, ["noise_level"]),
+], remainder="drop")
+```
+
+Each tuple contains **(name, transformer, columns)**.
+
+- **Name:** a label for the branch.
+- **Transformer:** one transformer or a preprocessing pipeline.
+- **Columns:** the input columns for that branch.
+
+::: {.notes}
+Read one tuple at a time. The num branch takes only age, n_people, and price, and sends them through numeric_pipe. The cat and ord branches work on their own selected columns. The transformer list determines the order of the output blocks.
+
+[ColumnTransformer documentation](https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html)
+:::
+
+## The shortcut: `make_column_transformer`
+
+```python
+from sklearn.compose import make_column_transformer
+
+preprocessor = make_column_transformer(
+    (numeric_pipe, ["age", "n_people", "price"]),
+    (categorical_pipe, ["food_type", "north_america"]),
+    (ordinal_pipe, ["noise_level"]),
+    remainder="drop",
+)
+```
+
+Each tuple contains **(transformer, columns)**; names are generated for you.
+
+**We'll primarily use this constructor.**
+
+## What comes out of a column transformer? {.smaller}
+
+- **Same rows:** each output row corresponds to the same input respondent.
+- **Output order:** numeric block, categorical block, then ordinal block in our example.
+- **Feature count:** may change; one-hot encoding can add columns.
+- **Unlisted columns:** dropped by default (`remainder="drop"`).
+- **Output format:** may be dense or sparse, depending on the transformations and sparsity.
+
+After fitting, inspect the output names with:
+
+```python
+preprocessor.fit(X_train, y_train)
+preprocessor.get_feature_names_out()
+```
+
+::: {.notes}
+Don't infer output column positions from the original DataFrame. Use the fitted transformer's feature names. With remainder="passthrough", unlisted columns are appended, so ensure they are suitable model inputs and never include the target. Our example deliberately drops all unlisted columns.
+
+[ColumnTransformer documentation](https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html)
+:::
+
+## Put preprocessing inside the prediction pipeline
+
+```python
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import cross_val_score
+
+pipe = make_pipeline(
+    preprocessor, # column transformer object
+    KNeighborsClassifier(),
+)
+
+scores = cross_val_score(pipe, X_train, y_train, cv=5)
+```
+
+**Raw survey columns $\to$ column transformer $\to$ KNN $\to$ predictions**
+
+Cross-validation fits **every branch and the classifier** within each fold.
+
+::: {.notes}
+Here X_train is a DataFrame containing the original survey columns, and y_train contains the like/dislike labels. We do not fit the preprocessor before passing the pipeline to cross-validation. ColumnTransformer prepares features; the final classifier makes predictions.
+:::
+
+
+## Class demo: combine the survey features
+
+[Open the preprocessing demo](https://github.com/UBC-CS/cpsc330-2026W1/blob/main/content/classes/varada/lecture-05-06-preprocessing-demo.ipynb)
+
+**Task:** infer a respondent's `like` / `dislike` label from their completed survey.
+
+As we build the column transformer:
+
+1. Trace which columns enter each branch.
+2. Inspect the transformed feature names and shape.
+3. Cross-validate the complete prediction pipeline.
+
+::: {.notes}
+Continue the survey demo by combining numeric, categorical, and ordinal feature groups. The task is inference from a completed survey, not a prediction of enjoyment before the visit. Keep the final test set reserved while comparing pipelines.
+:::
+
+## Summary {.slide-summary}
+
+- **Representation:** handle missing values, feature scales, and categories according to what the features mean.
+- **Learning:** fit transformations using only the available training rows, including within each CV fold.
+- **Combination:** a pipeline keeps preprocessing and prediction together; cross-validate the whole procedure.
+
+- **Feature groups:** use `ColumnTransformer` to apply different transformations to different columns.
+
+**Next lecture:** more preprocessing choices and text features.
+
+[DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
+
+## Exit question {.slide-your-turn}
+
+A colleague imputes and scales **all training rows**, then cross-validates a KNN classifier on the transformed matrix.
+
+“The test set is untouched, so there's no leakage.”
+
+**Do you agree? What would you change?**
+
+::: {.notes}
+Take a moment to decide whether you agree, and explain which rows influenced the preprocessing.
+
+The test set is untouched, but there's still leakage between the CV folds. Before cross-validation even starts, each future validation row has already contributed to the imputer's medians and the scaler's means and standard deviations.
+
+We should put the imputer, scaler, and KNN in one pipeline, then pass that pipeline and the raw numeric training columns to cross-validation. Each fold will fit all three steps using only its own training rows.
+
+That's the key idea to take away: the validation portion must stay out of every fit call, including the preprocessing steps.
+:::

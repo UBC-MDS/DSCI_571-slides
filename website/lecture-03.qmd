@@ -1,0 +1,25 @@
+---
+publish-pdf: true
+title: "Lecture 3: $k$-nearest neighbours and SVMs with RBF kernels"
+description: "$k$-nearest neighbours and SVMs with RBF kernels"
+description-short: "Similarity-based algorithms and $k$-nearest neighbours; Curse of dimensionality; SVMs with RBF kernels and support vectors; Effects of `C` and `gamma`; Model comparison and motivation for preprocessing"
+editor: { render-on-save: true }
+---
+
+## Slides
+
+[Download slides as PDF](slides/slides-03-kNNs-SVM-RBF.pdf){.btn .btn-outline-primary .pdf-download download=""}
+
+{{< revealjs "slides/slides-03-kNNs-SVM-RBF.html" height="600px" class="ratio ratio-16x9" >}}
+
+## Course notes
+
+[DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
+
+## Outline
+
+- Similarity-based algorithms and $k$-nearest neighbours
+- Curse of dimensionality
+- SVMs with RBF kernels and support vectors
+- Effects of `C` and `gamma`
+- Model comparison and motivation for preprocessing

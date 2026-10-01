@@ -1,0 +1,24 @@
+---
+publish-pdf: true
+title: "Lecture 2: ML fundamentals"
+description: "ML fundamentals"
+description-short: "Generalization and data splitting; Training, validation, test, and deployment data; Overfitting, underfitting, and model complexity; Cross-validation and the golden rule"
+editor: { render-on-save: true }
+---
+
+## Slides
+
+[Download slides as PDF](slides/slides-02-ml-fundamentals.pdf){.btn .btn-outline-primary .pdf-download download=""}
+
+{{< revealjs "slides/slides-02-ml-fundamentals.html" height="600px" class="ratio ratio-16x9" >}}
+
+## Course notes
+
+[DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
+
+## Outline
+
+- Generalization and data splitting
+- Training, validation, test, and deployment data
+- Overfitting, underfitting, and model complexity
+- Cross-validation and the golden rule

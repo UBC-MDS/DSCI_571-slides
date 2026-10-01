@@ -1,0 +1,25 @@
+---
+publish-pdf: true
+title: "Lecture 4: Preprocessing, pipelines, and column transformers"
+description: "Preprocessing, pipelines, and column transformers"
+description-short: "Imputation, scaling, and categorical encoding; Transformers and predictive estimators; Pipelines and preprocessing within cross-validation; ColumnTransformer: numeric, categorical, and ordinal branches; Cross-validating the complete prediction pipeline"
+editor: { render-on-save: true }
+---
+
+## Slides
+
+[Download slides as PDF](slides/slides-04-pipelines-column-transformer.pdf){.btn .btn-outline-primary .pdf-download download=""}
+
+{{< revealjs "slides/slides-04-pipelines-column-transformer.html" height="600px" class="ratio ratio-16x9" >}}
+
+## Course notes
+
+[DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
+
+## Outline
+
+- Imputation, scaling, and categorical encoding
+- Transformers and predictive estimators
+- Pipelines and preprocessing within cross-validation
+- ColumnTransformer: numeric, categorical, and ordinal branches
+- Cross-validating the complete prediction pipeline

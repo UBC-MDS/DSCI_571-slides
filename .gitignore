@@ -1,0 +1,16 @@
+# Local environment and operating-system files
+.venv/
+.DS_Store
+
+# Python and notebook caches
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+cache/
+
+# Quarto build output and temporary files; keep _freeze/ for saved results
+_site/
+.quarto/
+*.quarto_ipynb

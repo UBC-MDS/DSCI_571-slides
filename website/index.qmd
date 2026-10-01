@@ -1,0 +1,7 @@
+---
+title: Welcome
+---
+
+
+Welcome to DSCI 571! Here, you'll find slides for this course. 
+These slides are based on the notes present [here](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/). 

@@ -1,0 +1,6 @@
+*_site
+*.DS_store
+*.ipynb_checkpoints
+/.quarto/
+
+**/*.quarto_ipynb

@@ -1,0 +1,25 @@
+---
+publish-pdf: true
+title: "Lecture 1: Introduction, terminology, baselines, and decision trees"
+description: "Introduction, terminology, baselines, and decision trees"
+description-short: "What is machine learning, and when should we use it?; Features, targets, training, and prediction; Classification and regression; Baselines, accuracy, and error; Decision trees, parameters, hyperparameters, and decision boundaries"
+editor: { render-on-save: true }
+---
+
+## Slides
+
+[Download slides as PDF](slides/slides-01-intro-terminology-decision-trees.pdf){.btn .btn-outline-primary .pdf-download download=""}
+
+{{< revealjs "slides/slides-01-intro-terminology-decision-trees.html" height="600px" class="ratio ratio-16x9" >}}
+
+## Course notes
+
+[DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
+
+## Outline
+
+- What is machine learning, and when should we use it?
+- Features, targets, training, and prediction
+- Classification and regression
+- Baselines, accuracy, and error
+- Decision trees, parameters, hyperparameters, and decision boundaries
