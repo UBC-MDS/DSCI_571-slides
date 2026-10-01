@@ -1,0 +1,78 @@
+name: Publish slides
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: '1.10.18'
+
+      # Commit updated website/_freeze/ results after executing slides locally.
+      - name: Render website using frozen results
+        run: quarto render website
+
+      - name: Restore slide PDFs
+        uses: actions/cache@v4
+        with:
+          path: .pdf-cache
+          key: slide-pdfs-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            slide-pdfs-${{ runner.os }}-
+
+      - name: Plan PDF exports
+        id: pdfs
+        run: python3 scripts/slide_pdfs.py plan
+
+      - name: Set up Node for PDF exports
+        if: steps.pdfs.outputs.missing != '0'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install DeckTape and Chrome
+        if: steps.pdfs.outputs.missing != '0'
+        run: npm install --global decktape@3.16.1
+
+      - name: Export missing PDFs
+        if: steps.pdfs.outputs.missing != '0'
+        run: python3 scripts/slide_pdfs.py export
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: website/_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
