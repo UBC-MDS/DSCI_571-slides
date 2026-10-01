@@ -1,12 +1,12 @@
-# cpsc330-slides
-CPSC 330 lecture slides 
+# DSCI 571 slides
+DSCI 571 lecture slides
 
-This repository contains the slides for CPSC 330, Section 102, for 2026W1. The instructor for this section is Varada Kolhatkar.
+This repository contains the slides for DSCI 571 for 2026–27. The instructor for this section is Varada Kolhatkar.
 
 ## Automatic publishing
 
 The [Publish slides workflow](.github/workflows/publish.yml) renders the Quarto
-website and deploys it to <https://kvarada.github.io/cpsc330-slides/> on every
+website and deploys it to <https://ubc-mds.github.io/DSCI-571-slides/> on every
 push to `main`. You can also start it from **Actions → Publish slides → Run
 workflow**. No manual `quarto publish` command is needed.
 
@@ -46,7 +46,7 @@ remains available in the HTML slides.
 
 ### One-time GitHub setup
 
-In the repository's [Settings → Pages](https://github.com/kvarada/cpsc330-slides/settings/pages),
+In the repository's [Settings → Pages](https://github.com/UBC-MDS/DSCI-571-slides/settings/pages),
 set **Build and deployment → Source** to **GitHub Actions**. Commit and push the
 workflow, website sources and assets, and the complete `website/_freeze/`
 directory. The workflow uses GitHub's built-in token; no personal access token
@@ -110,7 +110,7 @@ From the repository root, deactivate any active Conda environment and run:
 
 ```bash
 uv sync --locked
-uv run python -m ipykernel install --sys-prefix --name python3 --display-name "CPSC 330 slides (.venv)"
+uv run python -m ipykernel install --sys-prefix --name python3 --display-name "DSCI 571 slides (.venv)"
 ```
 
 uv installs Python 3.12 if needed and creates `.venv` using the versions in
@@ -140,7 +140,7 @@ The website uses `freeze: auto`. To check Python execution after changing
 dependencies, render an individual slide file explicitly, for example:
 
 ```bash
-uv run quarto render website/slides/slides-02-terminology-decision-trees.qmd --execute
+uv run quarto render website/slides/slides-01-intro-terminology-decision-trees.qmd --execute
 ```
 
 ### Notebooks
@@ -152,8 +152,7 @@ uv run jupyter lab
 ```
 
 In VS Code, select `.venv/bin/python` (Windows: `.venv/Scripts/python.exe`)
-as the notebook kernel. NLP datasets and pretrained model downloads used by
-individual lectures may require additional network access and disk space.
+as the notebook kernel.
 
 ### Manage dependencies
 
@@ -161,7 +160,3 @@ Use `uv add PACKAGE` and `uv remove PACKAGE`, and commit both `pyproject.toml`
 and `uv.lock`. Use `uv sync --locked` after pulling changes. To deliberately
 upgrade the locked versions, run `uv lock --upgrade` followed by `uv sync`
 and check the affected lectures.
-
-PyTorch uses the default PyPI distributions. For a specific CUDA version or
-CPU-only Linux installation, follow the
-[uv PyTorch guide](https://docs.astral.sh/uv/guides/integration/pytorch/).

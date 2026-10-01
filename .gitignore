@@ -14,3 +14,8 @@ cache/
 _site/
 .quarto/
 *.quarto_ipynb
+
+# Generated slide PDFs and export plan
+.pdf-cache/
+.pdf-plan.json
+website/slides/*.pdf

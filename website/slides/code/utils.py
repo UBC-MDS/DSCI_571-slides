@@ -1,10 +1,6 @@
 import pandas as pd
 import numpy as np
 import re 
-from PIL import Image
-from torchvision.models import vgg16
-from torchvision import transforms
-import torch
 from sklearn.model_selection import cross_val_score, cross_validate, train_test_split
 
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor, export_graphviz, plot_tree
