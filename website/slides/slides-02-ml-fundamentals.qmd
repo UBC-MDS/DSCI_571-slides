@@ -11,7 +11,7 @@ format:
     slide-level: 2
     theme:
       - slides.scss
-      - lecture-02.scss
+      - lecture-formatting.scss
     center: true
     logo: img/UBC-CS-logo.png
     resources:
