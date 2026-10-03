@@ -12,7 +12,7 @@ format:
     slide-level: 2
     theme:
       - slides.scss
-      - lecture-02.scss
+      - lecture-formatting.scss
     center: true
     logo: img/UBC-CS-logo.png
     resources:
@@ -54,26 +54,49 @@ toy_regression_happiness_df = pd.read_csv('data/toy_job_happiness_regression.csv
 
 ![](img/inukshuk.jpeg){.nostretch fig-align="center" width="500px"}
 
+::: {.notes}
+Invite everyone to settle in and take two or three comfortable breaths. Leave a short silence before moving on.
+
+Transition: "Today we'll turn the idea of learning from examples into our first working model."
+:::
+
+
 ## Announcements
+
+- Lab 1 has been released.
+- DSCI 571 links:
+  - Course notes: https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/
+  - Lecture slides: https://ubc-mds.github.io/DSCI_571-slides/lecture.html
 
 <!-- Add DSCI 571 announcements here. -->
 
-## Today’s big questions {.slide-goals}
+::: {.notes}
+Point students to the released lab and the two course resources. The slides guide our class discussion; the course notes provide more detail for review.
 
-- What is machine learning, and when is it useful?
-- How do we represent a prediction problem with features and a target?
-- How do baselines and decision trees learn and make predictions?
-- How do we evaluate predictions and control tree complexity?
+Keep logistics brief and take any immediate clarification questions before moving on.
+:::
 
-## DSCI 571 course materials
 
-- [Course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
-- [Lecture slides](../lecture.qmd)
-- This course focuses on supervised learning, preprocessing, and building machine learning pipelines.
+## 571 Deliverables
 
-<!-- Add the current DSCI 571 syllabus, assessment information, and course platform links when available. -->
+The following deliverables will determine your course grade:
 
-# 🤝 Introductions 🤝 {.middle}
+|       Assessment       | Weight |                    Where to submit                    |
+| :--------------------: | :----: | :---------------------------------------------------: |
+|    Lab Assignment 1    |  12%   | [Gradescope](https://www.gradescope.ca/courses/39184) |
+|    Lab Assignment 2    |  12%   | [Gradescope](https://www.gradescope.ca/courses/39184) |
+|    Lab Assignment 3    |  10%   | [Gradescope](https://www.gradescope.ca/courses/39184) |
+|    Lab Assignment 4    |  12%   | [Gradescope](https://www.gradescope.ca/courses/39184) |
+|    Participation       |   4%   |   [Oral check-ins in lab](#participation-reasoning-check-ins-4)   |
+|         Quiz 1         |  25%   |    PrairieLearn     |
+|         Quiz 2         |  25%   |    PrairieLearn     |
+
+::: {.notes}
+Highlight the labs, quizzes, and participation component without reading every row. Point out that participation includes explaining reasoning in lab check-ins.
+
+Refer students to the course information for submission details. Do not introduce deadlines or policies beyond what is provided there.
+:::
+
 
 ## Meet your instructor {.smaller}
 
@@ -87,104 +110,72 @@ toy_regression_happiness_df = pd.read_csv('data/toy_job_happiness_regression.csv
 - Varada Kolhatkar [[ʋəɾəda kɔːlɦəʈkər](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet)]
 - You can call me Varada, **V**, or **Ada**.
 - Associate Professor of Teaching in the Department of Computer Science.
-- Ph.D. in Computational Linguistics at the University of Toronto. 
-- I primarily teach machine learning courses in the [Master of Data Science (MDS) program](https://masterdatascience.ubc.ca/). 
+- Ph.D. in Computational Linguistics at the University of Toronto.
+- I primarily teach machine learning courses in the [Master of Data Science (MDS) program](https://masterdatascience.ubc.ca/).
 - Contact information
     - Email: kvarada@cs.ubc.ca
     - Office: ICCS 237
 :::
-
 ::::
 
-## Meet Eva (a fictitious persona)!
+::: {.notes}
+Introduce yourself and how students can address you. Briefly connect your computational linguistics background to your interest in learning patterns from data.
 
-:::: {.columns}
-
-::: {.column width="40%"}
-![](img/eva-hi.png)
+Point out the contact information and invite questions during class. Transition: "I'd also like to hear where you're starting from."
 :::
 
-::: {.column width="60%"}
-Eva is among one of you. She has some experience in Python programming. She knows machine learning as a buzz word. During her recent internship, she has developed some interest and curiosity in the field. She wants to learn what is it and how to use it. She is a curious person and usually has a lot of questions!  
-:::
-
-::::
 
 ## Activity 1 {.slide-your-turn}
 \
-Discuss the following questions with your neighbour. 
+Discuss the following questions with your neighbour.
 
-- What's your name and background?
 - Where have you encountered machine learning?
-- What would you like to get out of this course?
 - What's one thing you're excited or unsure about?
 
-# AI in everyday life
+::: {.notes}
+Give neighbours about one minute to discuss both prompts. Invite two or three brief responses, including one uncertainty if someone is willing to share.
 
-## Original vs AI? {.smaller}
-
-Which cats do you think are AI-generated? 
-
-![](img/Kili-AI-generated.png)
-
-## Original vs AI? {.smaller}
-
-How did you decide?
-
-![](img/Kili-AI-marked.png) 
-
-## AI in the news {.smaller}
-
-:::: {.columns}
-
-::: {.column width="50%"}
-
-**[Mathematical discovery](https://www.bbc.com/news/articles/cy7zygy3rl2o):** 
-
-OpenAI reports an AI-generated solution to a major problem about fluid motion. 
-
-**[Emotional support](https://www.cbc.ca/news/health/ai-teenagers-mental-health-study-9.7327227):** 
-
-About one in five students in an Ontario study reported seeking emotional support from AI. The association with emotional problems does not establish causation. 
+Use their examples as connections later in the lecture. They do not need to know the terminology yet; this is a chance to surface experience and questions.
 :::
-:::{.column width="50%"}
-![](img/ai-math-problem.png)
 
-![](img/ai-therapist.png)
-:::
-::::
 
-**What would you want to know before trusting an AI system in either setting?**
+## Today’s big questions {.slide-goals}
+
+- What is machine learning, and when is it useful?
+- How do we represent a prediction problem with features and a target?
+- How do baselines and decision trees learn and make predictions?
+- How do we evaluate predictions and control tree complexity?
 
 ::: {.notes}
-Maybe: How accurate is it? How was it tested? Who checked the answer? What data was it trained on? What happens when it's wrong? Who is accountable?
+Describe the arc: understand learning from examples, organize a prediction problem, build a simple reference model, and improve it with a decision tree.
 
-Exactly.
-
-And notice that the answers may be different in different contexts.
-
-For mathematics, perhaps we can formally verify part of an argument. But people still have to decide whether the formal statement actually corresponds to the original mathematical problem and whether the result is significant.
-
-For emotional support, the questions are quite different. What evidence do we have that this is safe? For whom? What happens in a crisis? What information is being collected? Who is responsible?
+Emphasize that students will both read a model and use code to fit it. Today we measure training performance; whether the model works on unseen examples is the question for Lecture 2.
 :::
 
-## Which of these do you think use AI? {.slide-your-turn}
-
-- A spam detector 📧
-- Autocomplete on your phone 📱
-- A basic calculator ➕
-- Finding the closest holiday destination by straight-line distance 🛫
-- Predicting traffic conditions tomorrow 
-- Recommending a holiday destination you would enjoy 🛳️
-- A chatbot planning your holiday 💬
-
-**What makes you call something AI?** 
-
-::: {.notes}
-Invite explanations rather than seeking a single correct label for every example. Calculators and straight-line distance calculations are usually considered ordinary computation. Route-finding can illustrate classical AI search, although shortest-path algorithms also belong to general computer science. Spam detection, autocomplete, traffic prediction, and recommendations can use learned models, explicit rules, or combinations. A holiday-planning chatbot can combine a language model with a calculator to total costs, web search to find opening hours, and route search to plan travel. Ask which parts of its work each component handles. Determinism alone does not exclude a system from AI. Use the ambiguity to motivate the next slide's distinction between AI, ML, and DL, without requiring students to know those terms yet.
-:::
 
 # AI, ML, and DL
+
+::: {.notes}
+Transition from students' everyday examples to the vocabulary. "These terms are often used together. Let's distinguish them, then make learning from examples concrete."
+:::
+
+
+## Where do AI, ML, and DL fit? {.slide-your-turn}
+
+Quick discussion: which of these might use AI, machine learning, or deep learning?
+
+- A spam detector 📧
+- A basic calculator ➕
+- A chatbot planning your holiday 💬
+
+::: {.notes}
+Use this as a quick verbal discussion, about 30–60 seconds. Ask for reasoning rather than a single definitive label.
+
+A spam detector could use explicit rules or a learned model. A basic calculator is ordinary computation. A modern holiday chatbot may use a deep learning language model alongside tools such as a calculator or search.
+
+The task name alone does not tell us how the system is built. Transition: "The next diagram describes the relationship between the approaches."
+:::
+
 
 ## What are AI, ML, and DL?
 
@@ -192,21 +183,14 @@ Invite explanations rather than seeking a single correct label for every example
 
 Our focus: learning from examples and applying what we learn to new cases.
 
-:::{.notes}
-Imagine a self-driving car. To drive safely, the system needs to perceive what's around it—is there a pedestrian? Where are the other cars? It needs to reason about what it perceives—if there's a pedestrian in front of me, what should I do? And then it needs to act—perhaps slow down or stop.
+::: {.notes}
+Point from the outer category inward. AI is the broad field of building systems with capabilities such as perception, reasoning, and planning. ML is an approach that learns patterns from data or experience. DL is a type of ML using neural networks with many layers to learn representations and predictions.
 
-These are examples of capabilities we often associate with AI: perception, reasoning, planning, and decision-making.
+Not all AI learns from data: search and rule-based systems are examples of other approaches. Keep this distinction brief; students do not need a history of AI here.
 
-But AI doesn't necessarily mean machine learning. We can build AI systems using explicit rules, search, machine learning, or combinations of these approaches.
-
-Chess gives us a nice historical example. IBM built a chess-playing system called Deep Blue. Deep Blue relied heavily on search: it could examine enormous numbers of possible chess positions and evaluate which moves looked promising. A human chess player can't possibly search through that many possibilities.
-
-In 1997, Deep Blue defeated Garry Kasparov, who was the reigning world chess champion.
-
-So AI is broader than machine learning. Machine learning is one way of building systems with intelligent capabilities—and that's the approach we're mainly interested in in DSCI 571.
+Our focus is learning from examples and using what we learn on new cases. Transition: "What does learning a pattern actually look like?"
 :::
 
-# How ML works
 
 ## Image classification {.smaller}
 Searching photos for animals involves **image classification**. Imagine telling cats and foxes apart. How might we do this with traditional programming? With ML?
@@ -214,25 +198,30 @@ Searching photos for animals involves **image classification**. Imagine telling 
 :::: {.columns}
 
 ::: {.column width="35%"}
-![](img/cat-or-fox.png) 
+![](img/cat-or-fox.png)
 :::
 
 ::: {.column width="65%"}
 
-| Image ID | Whiskers Present | Ear Size  | Face Shape | Fur Color  | Eye Shape   | Label |
-|----------|------------------|-----------|------------|------------|-------------|-------|
-| 1        | Yes              | Large     | Round      | Mixed      | Round       | Cat   |
-| 2        | Yes              | Medium    | Round      | Brown      | Almond      | Cat   |
-| 3        | Yes              | Large     | Pointed    | Red        | Narrow      | Fox   |
-| 4        | Yes              | Large     | Pointed    | Red        | Narrow      | Fox   |
-| 5        | Yes              | Small     | Round      | Mixed      | Round       | Cat   |
-| 6        | Yes              | Large     | Pointed    | Red        | Narrow      | Fox   |
-| 7        | Yes              | Small     | Round      | Grey       | Round       | Cat   |
-| 8        | Yes              | Small     | Round      | Black      | Round       | Cat   |
-| 9        | Yes              | Large     | Pointed    | Red        | Narrow      | Fox   |
+| Image ID | Whiskers Present | Face Shape | Fur Colour | Label |
+|----------|------------------|------------|------------|-------|
+| 1        | Yes              | Round      | Mixed      | Cat   |
+| 2        | Yes              | Round      | Brown      | Cat   |
+| 3        | Yes              | Pointed    | Red        | Fox   |
+| 4        | Yes              | Pointed    | Red        | Fox   |
+| 5        | Yes              | Round      | Grey       | Cat   |
 
-::: 
+:::
 ::::
+
+::: {.notes}
+Ask students what clues they would use to tell a cat from a fox. Then connect their suggestions to the table: a row is one example, the descriptive columns are features, and Cat/Fox is the known label. Image ID identifies the row; it is not an animal characteristic.
+
+Ask: "Which column helps distinguish the labels in this small table? Which doesn't?" Face shape and fur colour distinguish these examples; whiskers are always present and do not separate them.
+
+These are illustrative, manually supplied features, not a reliable biological rule. Transition: "Who decides how to combine those clues into a prediction?"
+:::
+
 
 ## Who writes the rules?
 
@@ -242,7 +231,7 @@ Searching photos for animals involves **image classification**. Imagine telling 
 
 We write the rules.
 
-**Pointed face + red fur + narrow eyes**
+**Pointed face + red fur**
 
 ↓
 
@@ -266,25 +255,39 @@ Learn a **prediction rule**
 :::
 
 ::: {.notes}
-In the example table, fur colour helps distinguish the classes, while whiskers do not because every animal has them. These patterns need not hold for all cats and foxes. ML can learn rules, too; the distinction is whether we specify the prediction rule ourselves or learn it from examples. Both approaches need evaluation on new cases.
+Read the two workflows side by side. With explicit programming, we specify the prediction rule. With supervised ML, we supply examples and labels, and a learning algorithm fits a rule. ML can learn rules too; the difference is where the rule comes from.
+
+Before revealing the white-fox question, ask students what could go wrong with the hand-written rule. A white fox fails the red-fur condition. A learned model might also fail if it relies on colour; it might succeed if it uses face shape. We cannot know without inspecting or testing it.
+
+Both approaches need evaluation on new cases. Transition: "For images, deep learning can also learn useful representations instead of requiring us to describe every feature."
 :::
 
-## DL approach: example 
+
+## DL approach: example
 
 :::: {.columns}
 
 ::: {.column width="40%"}
-![](img/cat-or-fox.png) 
+![](img/cat-or-fox.png)
 :::
 
 ::: {.column width="60%"}
 - A neural network automatically learns which features to look at (edges $\rightarrow$ textures $\rightarrow$ objects).
-- No need to even specify face shape or fur colour. It learns relevant features on its own. 
-::: 
+- No need to even specify face shape or fur colour. It learns relevant features on its own.
+:::
 
 ::::
 
-## Ways of learning from data {.smaller}
+::: {.notes}
+Contrast the input representations: the previous example supplied face shape and fur colour; an image network can start with pixel values and learn intermediate representations during training.
+
+Edges, textures, and objects are an intuition for increasingly complex representations, not a guaranteed sequence for every network. For this supervised cat/fox task, we still supply training labels.
+
+Learning representations does not remove the need for suitable data, design choices, and evaluation. We will focus on tabular supervised learning rather than training image networks in this course.
+:::
+
+
+## Ways of learning from data {.smaller visibility="hidden"}
 
 - **Supervised learning:** predict targets from labeled examples
 - **Unsupervised learning:** discover structure without supplied targets
@@ -294,19 +297,60 @@ In the example table, fur colour helps distinguish the classes, while whiskers d
 
 These categories are not mutually exclusive.
 
+::: {.notes}
+Optional orientation only; this slide is hidden in the main presentation. Supervised learning uses known targets, unsupervised learning looks for structure without designated targets, and reinforcement learning uses interaction and rewards.
+
+Generative AI describes generating content, and recommendation describes an application; these are not additional mutually exclusive learning approaches. Return to supervised learning as the course focus rather than expanding the taxonomy.
+:::
+
 
 ## Supervised learning: inputs, targets, and predictions {.smaller}
 
-- **Inputs ($X$):** observations described by features, such as fur colour and ear size.
+- **Inputs ($X$):** observations described by features, such as fur colour and face shape.
 - **Targets ($y$):** labels or values we want to predict, such as cat or fox.
 - **Training:** learn a model $f$ relating inputs to targets.
 - **Prediction:** use the model to predict targets for unseen examples.
 
 ![](img/sup-learning.png){.nostretch fig-align="center" height="280px"}
 
+::: {.notes}
+Use cats and foxes to name each part: X contains the descriptive features, y contains the known animal labels, and training produces a model f.
+
+Trace the diagram in two stages: labeled examples produce a fitted model; the fitted model then receives the features of a new example and returns a prediction. The new label is not supplied when predicting.
+
+Ask: "What would we need later to check whether that prediction was right?" Its actual label. Transition: "Before building a model, should this problem use ML at all?"
+:::
+
+
 # When should we use ML?
 
-## Rules, ML, or human judgment? {.smaller}
+::: {.notes}
+Frame this as choosing an appropriate starting point for a problem. Having an ML tool available does not make it the best tool for every task.
+:::
+
+
+## ❓❓ Rules, ML, or human judgment? {.smaller .slide-your-turn}
+
+Choose a starting point for each problem and explain why. Combinations are possible.
+
+- **(A)** Checking whether an email address ends with `@student.ubc.ca`
+- **(B)** Predicting which songs a listener might enjoy
+- **(C)** Awarding a scholarship based on a student's personal essay
+
+Where could mistakes cause harm, and who should be responsible?
+
+::: {.notes}
+Give students about one minute to choose starting points and explain why. If using a single iClicker vote, ask which starting point they would choose for song recommendations, stating the response options aloud; discuss the other two examples verbally.
+
+Suggested answers: A uses an explicit suffix check; B can use ML to learn preferences from examples; C requires accountable human judgment about criteria and context. ML might assist with C, but a predicted score does not settle who deserves an award.
+
+Debrief orally: rules fit known, precise logic; ML fits useful patterns in representative data when rules are hard to write and errors can be evaluated; human judgment matters when values, empathy, context, and accountability are central. Systems can combine all three.
+
+Ask briefly where errors would cause harm. Close with: "Making a prediction does not automatically justify handing the decision to a model."
+:::
+
+
+## Rules, ML, or human judgment? {.smaller visibility="hidden"}
 
 | Starting point | When it is appropriate |
 |---|---|
@@ -316,58 +360,39 @@ These categories are not mutually exclusive.
 
 Real systems can combine all three. Making a prediction does not automatically justify delegating the decision to a model.
 
-
-## ❓❓ Rules, ML, or human judgment? {.smaller .slide-your-turn}
-
-Choose a starting point for each problem and explain why. Combinations are possible.
-
-- **(A)** Checking whether an email address ends with `@student.ubc.ca`
-- **(B)** Awarding a scholarship based on a student's personal essay
-- **(C)** Predicting which songs a listener might enjoy
-- **(D)** Checking whether two essays are exactly identical
-- **(E)** Tagging photos of friends
-
-Where could mistakes cause harm, and who should be responsible?
-
 ::: {.notes}
-Suggested starting points: A and D use explicit rules; C and E use ML; B requires accountable human judgment. ML could assist parts of B, but predicting a score does not settle who deserves a scholarship. Exact matching in D is only one narrow check, not a complete plagiarism detector.
+Hidden reference slide: the oral debrief on the preceding activity carries this content. If showing the table for clarification, summarize each row with the email, song, and scholarship examples.
+
+Emphasize representative data and the ability to evaluate errors as conditions for using ML. The three starting points can be combined; human oversight does not by itself guarantee a good outcome.
 :::
+
 
 # Formulate a prediction problem
 
-## Which job might make you happy? 
+::: {.notes}
+Transition: "We've seen how examples can teach a model to distinguish animals. Now we'll build a small model ourselves using a table of job attributes."
+:::
+
+
+## Which job might make you happy? {.slide-your-turn}
 
 You've graduated and have several job offers. **Which one would make you happiest?**
 
-You decide to look for patterns in the experiences of friends who value similar things in a job.
-
-![](img/happy-vs-sad-employee.png){.nostretch fig-align="center" width="600px" fig-alt="Happy vs sad employees"}
+![](img/happy-vs-sad-employee.png){.nostretch fig-align="center" width="400px" fig-alt="Happy vs sad employees"}
 
 <center><small>Image created by GPT-6 Astra</small></center>
 
-::: {.notes}
-Invite two or three suggestions before showing the data. This is an invented teaching dataset, not evidence about what causes happiness. We are predicting a reported outcome, not choosing a job on someone's behalf.
-:::
-
-## What do we need to know? {.slide-your-turn}
-
-Before thinking about machine learning, let's define the prediction problem.
-
-- **Problem**: Help someone choose a job they'll be happy in.
-- **What things about a job might affect how happy you are with it?**
-- **What exactly should we predict? How could we represent it?**
+- **What job attributes would you record?**
+- **What outcome would you predict, and how would you represent it?**
 
 ::: {.notes}
-Frame ML as a tool for solving a problem. First clarify the decision we want to support, then define a prediction that could help.
+Invite two or three suggestions for job attributes, then ask what outcome students would record. Imagine looking for patterns in the experiences of friends with similar priorities.
 
-Ask aloud: "Would this prediction actually help someone make their decision?" Predicting happiness can inform a job choice, but does not make the decision for the person.
+Possible targets are Happy/Unhappy or a numerical satisfaction score. Clarify what each measures; encoding Happy as 1 does not turn classification into regression.
 
-For the target, students might suggest Happy/Unhappy, 1/0, or a numerical satisfaction score. Use their suggestions to emphasize that what the target represents matters. Encoding Happy as 1 and Unhappy as 0 does not turn the problem into regression.
-
-The numerical satisfaction target is hypothetical; it is not in our dataset.
-
-This sequence describes supervised ML; unsupervised tasks do not have a designated prediction target.
+This is an invented teaching dataset, not evidence about what causes happiness. A prediction could inform someone's job choice, but does not make that choice for them. Transition: "Let's inspect the examples we have."
 :::
+
 
 ## Toy job happiness dataset
 
@@ -378,24 +403,13 @@ show_jobs(toy_happiness_df)
 Each row describes one person in a job. **1 = yes; 0 = no.**
 
 ::: {.notes}
-Read one row aloud. The chapter applies the same concepts to quiz grades; this lecture uses job happiness so we can inspect all seven examples. The boss_vegan column is an arbitrary candidate feature, not a claim about diet and happiness.
+Read one row aloud: a person with no supportive colleagues, salary 70,000, no free coffee, and a vegan boss reported Unhappy. Explain that 0/1 encodes no/yes for the binary attributes; salary is a numerical amount.
+
+There are seven examples, small enough to inspect together. boss_vegan is an arbitrary candidate feature, not a claim about diet and happiness. A recorded feature is not automatically useful or causal.
+
+Transition: "Which parts would we give the model, and which part would we ask it to predict?"
 :::
 
-## Recap: the goal of supervised learning
-
-Use examples with known **features $X$** and **targets $y$** to learn a mapping function **$f$**.
-
-$$
-\underbrace{X_{\text{new}}}_{\text{features}}
-\xrightarrow{\text{learned model } f}
-\underbrace{\hat{y}_{\text{new}}}_{\text{predicted targets}}
-$$
-
-**The goal:** predict targets accurately for **new examples**.
-
-::: {.notes}
-The model approximates the relationship between features and targets; it need not reproduce every training label perfectly. Explain that y is a known target and y-hat is a model prediction. Now ask students to identify X and y in the job dataset.
-:::
 
 ## Your turn: identify $X$ and $y$ {.slide-your-turn}
 
@@ -413,10 +427,15 @@ $n = 7$ examples and $d = 4$ features
 :::
 
 ::: {.notes}
-The first row is outlined and the target column is shaded. Ask students to identify each role before revealing the labels. Features need to be available when making a prediction; the unknown answer cannot also be an input.
+Pause before revealing the answer. Ask students to identify features, target, and one example.
+
+X consists of supportive_colleagues, salary, free_coffee, and boss_vegan. y is happy?. Each row is one person in a job. The displayed subset has three rows, while the full dataset has n = 7 examples and d = 4 features.
+
+Features must be available when making the prediction. The unknown happiness answer cannot also be an input.
 :::
 
-## Training vs. Prediction 
+
+## Training vs. Prediction
 
 - Training: learn the mapping
   - Known features $X$ + known targets $y$ $\to$ fitted model $f$
@@ -428,10 +447,13 @@ The first row is outlined and the target column is shaded. Ask students to ident
 **We need known targets to train the model, not to make predictions.**
 
 ::: {.notes}
-Training is also called fitting. In the job example, training uses job attributes and known happiness labels. For a new job, we supply its attributes to the fitted model; the happiness label is unknown. A prediction is the model's proposed answer and may differ from the actual target. Known targets are also needed to evaluate prediction accuracy.
+Walk through the job example twice. During training, we have job attributes and known happiness labels. During prediction, we provide attributes to the already fitted model and receive its proposed happiness label.
 
-Optional reminder: unsupervised learning has no designated target—for example, grouping similar jobs by their attributes. Ask whether grouping jobs requires happy? labels; the answer is no.
+Explain that y is a known target and y-hat is a prediction. Prediction does not itself refit the model, and a prediction may differ from the eventual observed label.
+
+Known targets are needed to train this supervised model and to evaluate predictions, but not to produce predictions. The goal is useful performance on new examples.
 :::
+
 
 ## Same job features, different targets {.smaller}
 
@@ -444,6 +466,15 @@ show_jobs(toy_regression_happiness_df.head(3))
 
 Other regression examples: predicting temperature, house price, or travel time.
 
+::: {.notes}
+Keep the job attributes fixed and change the question we ask. Happy/Unhappy asks for a category: classification. A satisfaction score asks for a numerical quantity: regression.
+
+The happiness scores are invented for illustration. In this table, happy? and happiness_score are alternative outcomes; happy? should not be included as a feature when illustrating prediction of an unknown happiness score.
+
+A numerical encoding of categories is still classification. Transition: "Let's classify a few prediction tasks by the kind of answer they require."
+:::
+
+
 ## iClicker 1.1: Classification or regression? {.slide-your-turn}
 
 
@@ -455,14 +486,20 @@ Other regression examples: predicting temperature, house price, or travel time.
 - **D.** Predict whether you'll get a seat on the bus.
 - **E.** Predict whether you'll hit snooze tomorrow morning.
 
+::: {.notes}
+Give students 30–60 seconds before discussing responses. Correct answers: B and C are regression because the targets are delay in minutes and percentage grade.
+
+A, D, and E ask for yes/no categories, so they are classification. Compare A with B: the same flight context can support either task depending on the target.
+
+If C is confusing, distinguish predicting a percentage from predicting a letter-grade category. Classification versus regression depends on the meaning of the target, not simply how it is stored.
+:::
+
+
 # Train, predict, and evaluate models using `scikit-learn`
 
-## [`scikit-learn`](https://scikit-learn.org/stable/)
-
-- In this part of the course we use a framework called `scikit-learn`.
-- A popular framework for tabular data 
-- Easy to use. 
-- 67.3K stars on Github 
+::: {.notes}
+Transition from identifying the data's roles to implementing them. "We'll start with a deliberately simple model so that a more complicated model has something to beat."
+:::
 
 
 ## Separate the inputs from the target
@@ -480,6 +517,15 @@ y = toy_happiness_df['happy?']
 
 **Keep the answer out of the inputs.**
 
+::: {.notes}
+Read the two lines: drop happy? to construct the feature table; select happy? to construct the target Series. These operations organize the data, not train a model.
+
+Explain the shapes: X has seven rows and four columns; y has one label for each of the seven rows. Row alignment matters: each target must belong to the corresponding feature row.
+
+Keep the answer out of the inputs. Transition: "Before using these features, how well could we do by ignoring them?"
+:::
+
+
 ## Your turn: predict without the features {.slide-your-turn}
 
 ![](img/happy_unhappy_faces.png){.nostretch width="320px" fig-align="center" fig-alt="Seven training labels: four Happy and three Unhappy"}
@@ -487,8 +533,13 @@ y = toy_happiness_df['happy?']
 If you must predict **the same label for everyone**, which label should you choose? How many predictions will be correct?
 
 ::: {.notes}
-Allow 30–45 seconds before advancing. Ask for both a label and a count. This introduces the most-frequent baseline before any library code.
+Allow 30–45 seconds. Ask for both the single label and the number of correct predictions.
+
+Answer: choose Happy, which occurs four times; this gets four of seven right. Always choosing Unhappy would get three right.
+
+This is the most-frequent baseline. It uses the training labels to choose its constant prediction, but ignores the job attributes.
 :::
+
 
 ## A baseline gets four out of seven right
 
@@ -502,10 +553,17 @@ show_jobs(pd.DataFrame({'Actual': y, 'Baseline prediction': baseline_labels,
 **Classification error:** $3/7 \approx 43\% = 1 - \text{accuracy}$
 
 ::: {.notes}
-A baseline gives us a reference point. Getting some predictions right does not establish that a model has learned anything useful from the job attributes.
+Read one correct and one incorrect row rather than the full table. Accuracy is correct predictions divided by all predictions: 4/7, about 57%. Classification error is the fraction incorrect: 3/7, about 43%.
+
+This is the performance of a constant prediction on our training examples. It is a reference point, not evidence that we learned useful relationships with job attributes.
+
+Transition: "Let's fit this same baseline using the interface we'll also use for decision trees."
 :::
 
+
 ## Fit a baseline with scikit-learn
+
+We’ll use [scikit-learn](https://scikit-learn.org/stable/), a Python machine learning library.
 
 ```{python}
 #| echo: true
@@ -520,8 +578,13 @@ dummy.fit(X, y);
 Here, it finds the most frequent target. **This baseline ignores the feature values.**
 
 ::: {.notes}
-Scikit-learn calls model objects estimators. Introduce the library in the context of this task rather than opening its homepage. DummyClassifier receives X for a consistent API even though this strategy does not use its values.
+Introduce scikit-learn as the Python library we will use. Explain the sequence: import the estimator class, create an estimator with a chosen strategy, then fit it using X and y.
+
+Here fit learns which target is most frequent. DummyClassifier accepts X for a consistent interface even though this strategy ignores the feature values.
+
+Pause to distinguish creating the model object from fitting it. Transition: "Once fitted, we can request predictions and compare them with known answers."
 :::
+
 
 ## Predict, then check accuracy
 
@@ -539,10 +602,15 @@ print(f'Training accuracy: {dummy.score(X, y):.1%}')
 **`score(X, y)`** compares predictions with known targets.
 
 ::: {.notes}
-For this classifier, score returns accuracy. We are scoring the data used for fitting, so this is training accuracy. We have not measured performance on new people.
+Ask students to anticipate the output: seven Happy predictions, followed by about 57% training accuracy.
+
+predict takes features and returns labels. For this classifier, score compares those labels with y and returns accuracy. We are using the same examples that supplied the training labels, so call this training accuracy explicitly.
+
+We have not measured performance for new people. Transition: "These method names form a workflow that we can reuse with another model."
 :::
 
-## 
+
+##
 
 | Method | You provide | It does |
 |---|---|---|
@@ -550,17 +618,27 @@ For this classifier, score returns accuracy. We are scoring the data used for fi
 | **`predict(X_new)`** | Features | Returns predicted targets |
 | **`score(X, y)`** | Features and known targets | Returns a default evaluation measure |
 
-**Why doesn't `predict` require `y`?** 
+**Why doesn't `predict` require `y`?**
 
 ::: {.fragment}
 We don't know the answer yet!
 :::
 
 ::: {.notes}
-For classifiers used here, score is accuracy. Regressors usually return R²; score does not always mean accuracy. For supervised evaluation, known targets are needed to judge the predictions. Prediction and evaluation can be separate uses of a fitted model, not mandatory consecutive steps on the same examples.
+Use this table as a quick workflow recap. Ask why predict does not require y, then reveal: when predicting an unknown outcome, we do not have its answer.
+
+fit uses features and targets to learn; predict uses features to return proposed targets; score requires known targets to judge predictions. A model can be used for prediction without immediately being evaluated.
+
+For the classifiers here, score is accuracy. Do not generalize that to all estimators; regressors usually use R-squared. Keep the focus on the inputs each method needs.
 :::
 
-# Decision trees 
+
+# Decision trees
+
+::: {.notes}
+Transition: "Our baseline ignores every job attribute. Can questions about those attributes improve its predictions?"
+:::
+
 
 ## Can we do better than the baseline? {.slide-your-turn}
 
@@ -568,11 +646,16 @@ For classifiers used here, score is accuracy. Regressors usually return R²; sco
 show_jobs(toy_happiness_df)
 ```
 
-**Propose one yes/no question that separates Happy from Unhappy.** 
+**Propose one yes/no question that separates Happy from Unhappy.**
 
 ::: {.notes}
-Invite rules involving supportive_colleagues or salary. Unlike the baseline, these rules use feature values. A decision tree learns a hierarchy of questions from the data.
+Give students about 45 seconds to propose a yes/no question based only on the features. Possible questions include whether colleagues are supportive or whether salary exceeds a threshold.
+
+Ask how the labels differ in the two resulting groups. A useful first question need not classify every example perfectly.
+
+Unlike the baseline, these questions use feature values. Transition: "How could we compare two candidate questions?"
 :::
+
 
 ## Which question is more effective? {.slide-your-turn}
 ::: panel-tabset
@@ -585,7 +668,7 @@ Invite rules involving supportive_colleagues or salary. Unlike the baseline, the
 | Question | No group | Yes group | Comments|
 |---|---|---|---|
 | Supportive colleagues? | 0 😊, <br>2 ☹️ | 4 😊,<br>1 ☹️ | Cleaner split|
-| Boss vegan? | 2 😊,<br>2 ☹️ | 2 😊,<br>1 ☹️ | Mixed labels| 
+| Boss vegan? | 2 😊,<br>2 ☹️ | 2 😊,<br>1 ☹️ | Mixed labels|
 :::
 ::::
 ### Data {.smaller}
@@ -597,31 +680,33 @@ show_jobs(toy_happiness_df)
 
 
 ::: {.fragment}
-**Supportive colleagues** gives a cleaner split. 
+**Supportive colleagues** gives a cleaner split.
+:::
+
+::: {.notes}
+Pause before revealing the cleaner split. Supportive colleagues creates a no group with two Unhappy examples and a yes group with four Happy and one Unhappy. Boss vegan leaves both groups with mixed labels.
+
+Ask: "In which split are we more certain about the label within each group?" Supportive colleagues is better in this comparison. The Data tab is available if students want to check the counts.
+
+This comparison concerns the observed labels, not a causal explanation. It also does not prove this is the best question among all features; salary is another candidate.
 :::
 
 
-## What are we trying to learn? 
+## How does a tree learn its questions?
 
-- We want to learn which questions to ask and in what order.
-- How many different combinations of feature-based questions could a decision tree potentially ask?
-
-
-```{python}
-show_jobs(toy_happiness_df)
-```
-
-## Decision tree Training (high level)
-
-- Training a decision tree is a search process: we look for the "best" tree among many possible ones.
-- There are different algorithms for learning trees. [Check this out.](https://scikit-learn.org/stable/modules/tree.html#tree-algorithms-id3-c4-5-c5-0-and-cart) 
-- At each step, we evaluate candidate questions using measures such as:
-  - Information gain
-  - Gini index
-- The goal is to split the data into groups with greater certainty (more homogeneous outcomes).
+- Learn **which feature-based questions to ask, and in what order**.
+- At each node, compare candidate questions and choose a split that makes the groups' labels less mixed.
+- Repeat within each group, until a stopping condition is reached.
+- Each leaf predicts its most frequent training class.
 
 ::: {.notes}
-For classification, measures such as Gini impurity or entropy quantify class mixture. No formulas are needed here. Numeric features do not need to be binarized: a tree can learn salary <= 75000. A leaf predicts its most frequent training class. This is a sequence of **local choices**; it does not guarantee the best possible whole tree.
+Connect the manual comparison to the algorithm: at a node, compare candidate feature questions, choose a split that reduces label mixture, and repeat within the resulting groups until a stopping condition is met.
+
+Leaves return their most frequent training label. These local choices do not guarantee the best possible whole tree. Gini impurity or entropy can quantify mixture; no formulas are needed today.
+
+Numeric features can be split using thresholds, such as salary <= 75000. Supportive colleagues beat boss_vegan in our comparison, but the algorithm also considers salary, so the fitted root may differ from our example.
+
+Optional reading: [Tree algorithms](https://scikit-learn.org/stable/modules/tree.html#tree-algorithms-id3-c4-5-c5-0-and-cart).
 :::
 
 
@@ -640,9 +725,12 @@ model.fit(X, y);
 `max_depth=2` allows at most two questions along a prediction path.
 
 ::: {.notes}
-random_state makes the example reproducible. Leave the parameter/hyperparameter distinction until students have seen what this model learned.
-:::
+Compare these lines with the baseline code: import, construct, fit. The interface is the same; the learning algorithm changes.
 
+max_depth=2 permits at most two questions on a root-to-leaf prediction path. It does not mean two questions in the whole tree or guarantee that every path has length two. random_state makes this example reproducible.
+
+Leave the parameter/hyperparameter distinction until students have seen what was learned. Transition: "Let's read the questions that fitting produced."
+:::
 
 
 ## Read the learned tree {.smaller}
@@ -655,7 +743,13 @@ plot_tree(model, filled=True, feature_names = X.columns, class_names=["Happy", "
 **Root:** first question, **Branch:** answer to a question, **Leaf:** prediction
 
 ::: {.notes}
-At each question, True goes left and False goes right. For a 0/1 feature, supportive_colleagues <= 0.5 means no supportive colleagues. Internal nodes ask questions; leaves return the majority label. Here the algorithm selected salary first, although supportive colleagues was better than boss_vegan in our earlier comparison.
+Start at the root: salary <= 75,000. In this plot, True goes left and False goes right. Low salary predicts Unhappy; higher salary leads to the supportive_colleagues question.
+
+For a 0/1 feature, supportive_colleagues <= 0.5 means no supportive colleagues. Among the higher-salary examples, no supportive colleagues predicts Unhappy and supportive colleagues predicts Happy.
+
+Name root, branch, and leaf while pointing to them. value counts training labels in the order Happy, Unhappy; samples counts examples reaching the node. Leaf predictions use the majority label.
+
+Salary was selected first even though supportive colleagues beat boss_vegan in our earlier two-question comparison. Transition: "Now follow one new example through this tree."
 :::
 
 <!-- ## Read the learned tree {.model-plot}
@@ -678,11 +772,12 @@ At each question, True goes left and False goes right. For a 0/1 feature, suppor
 
 
 ## Prediction  {.model-plot .boundary-plot}
-What would be the prediction for the example below using this tree ? 
+What would be the prediction for the example below using this tree ?
 
 :::: {.columns}
 
 ::: {.column width="70%"}
+
 ```{python}
 nodes = plot_tree(
     model, filled=True,
@@ -697,15 +792,27 @@ for node in nodes:
         if not line.startswith("samples =")
     ))
 ```
+
 :::
+
 ::: {.column width="30%"}
 
 - supportive_colleagues = 0
 - salary = 100,000
 - coffee_machine = 0
 - vegan_boss = 1  
+
 :::
 ::::
+
+::: {.notes}
+Give students 30–45 seconds to trace the path before asking for an answer. Salary 100,000 fails salary <= 75,000, so go right. supportive_colleagues = 0 satisfies <= 0.5, so go left to Unhappy.
+
+Ask for the path as well as the label. Free coffee and boss diet are not used by this particular tree, even though they were supplied during fitting.
+
+The slide's coffee_machine and vegan_boss descriptions correspond to the dataset columns free_coffee and boss_vegan. The predicted label is not a known actual outcome. Transition: "The code should follow the same path."
+:::
+
 
 ## Prediction with `sklearn`
 
@@ -719,6 +826,15 @@ for node in nodes:
 test_example = [[0, 100000, 0, 1]]
 print("Model prediction: ", model.predict(test_example))
 ```
+
+::: {.notes}
+Ask students to predict the printed label before showing or reading the result: Unhappy.
+
+The nested list represents one example with four features, in the training-column order: supportive_colleagues, salary, free_coffee, boss_vegan. The outer list supplies the row dimension; scikit-learn expects a collection of examples, even for one prediction.
+
+Feature order and schema must match training. In practical code, a DataFrame with the training column names makes that correspondence clearer. We supply no happiness label.
+:::
+
 
 ## Does the tree beat the baseline?
 
@@ -743,8 +859,13 @@ We still don't know how well it predicts happiness for new people.
 :::
 
 ::: {.notes}
-Ask students what the word training contributes to the claim. Do not introduce a full train/test workflow yet; that is the central question for Lecture 2.
+Compare 4/7 for the baseline with 7/7 for the depth-two tree. Ask students what the phrase training accuracy adds before revealing the qualification.
+
+The tree fits these seven observed labels better. That does not show it predicts new people's happiness better or establish that its splits describe causes.
+
+Hold off on the full train/test procedure; Lecture 2 addresses the unanswered question. Transition: "Before adding another representation, let's check how the workflow feels."
 :::
+
 
 ## iClicker Check-in {.slide-your-turn}
 
@@ -757,10 +878,13 @@ Ask students what the word training contributes to the claim. Do not introduce a
 - **D.** I'd benefit from a pause and another example.
 
 ::: {.notes}
-Use the response to choose a brief pause or revisit one prediction. This is a confidence check, not a scored content question.
+Allow a short response period. Treat this as a confidence check rather than a question with a correct answer.
+
+If code is the sticking point, revisit construct, fit, predict, score. If tree reasoning is the sticking point, trace the 100,000/no-supportive-colleagues example again. If many students request a pause, take it before introducing complexity and boundaries.
 :::
 
-## Parameters vs. Hyperparameters 
+
+## Parameters vs. Hyperparameters
 
 | Before `fit`: **hyperparameters** | During `fit`: **parameters** |
 |---|---|
@@ -772,15 +896,13 @@ Use the response to choose a brief pause or revisit one prediction. This is a co
 :::
 
 ::: {.notes}
-Leaf predictions are also learned from the data. Hyperparameters can later be selected using validation; for now, emphasize that they are supplied before fitting. A maximum depth is a limit, not a guarantee of exactly that depth.
+Contrast what we set before fitting with what the algorithm learns from examples. We supplied max_depth=2; fitting selected the salary and supportive-colleagues thresholds. Leaf predictions and the chosen split features are also learned.
+
+Reveal the depth definition and count the edges along the longest root-to-leaf path. A maximum depth is an upper limit, not a guarantee of exactly that depth.
+
+Hyperparameters can later be chosen using validation. Today, use depth to see how a constraint changes the model's questions and predictions.
 :::
 
-
-## Decision boundary 
-
-- A **decision boundary** is the line, curve, or surface that separates classes.
-- Points on one side $\rightarrow$ Model predicts Class Happy  
-- Points on the other side $\rightarrow$ Model predicts Class Unhappy
 
 ## Decision boundary with `max_depth=1` {.model-plot .boundary-plot .smaller}
 
@@ -797,22 +919,22 @@ plot_tree_decision_boundary_and_tree(
 )
 ```
 
-## Decision boundary with `max_depth=1` {.model-plot .boundary-plot .smaller}
-
-```{python}
-X_subset = X[["supportive_colleagues", "salary"]]
-model = DecisionTreeClassifier(max_depth=1, random_state=1)
-model.fit(X_subset.values, y)
-plot_tree_decision_boundary_and_tree(
-    model, X_subset, y, x_label="supportive_colleagues", y_label="salary", fontsize=12, class_names = ["Happy", "Unhappy"]
-)
-```
-
-A depth-one tree is called a **decision stump**. A shallow tree can stop too soon. Which person does this tree get wrong?
+**Decision stump:** a depth-one tree. **Which person does it get wrong?**
 
 ::: {.fragment}
 The person earning **$150,000 without supportive colleagues**.
 :::
+
+::: {.notes}
+Orient students before discussing the error: the horizontal axis is supportive_colleagues (0 or 1), the vertical axis is salary, points show actual labels, and background regions show predicted labels.
+
+For this visualization, we fit a new model using only these two features. The binary horizontal feature has meaningful observed values at 0 and 1; the continuous background between them illustrates the model's regions.
+
+A depth-one tree asks only the salary question. Its boundary is at salary 75,000: lower salaries predict Unhappy and higher salaries predict Happy. A boundary marks where the predicted class changes, not a causal threshold.
+
+Pause before revealing the error: the person earning 150,000 without supportive colleagues is actually Unhappy but lies in the Happy region. Training accuracy is 6/7. Transition: "What happens if we allow one more question along the path?"
+:::
+
 
 ## Decision boundary with `max_depth=2` {.model-plot .boundary-plot}
 
@@ -827,6 +949,13 @@ plot_tree_decision_boundary_and_tree(
 )
 ```
 
+::: {.notes}
+Keep the same axes and compare with the stump. The salary split remains; the higher-salary region receives an additional split on supportive colleagues. For higher salaries, only supportive colleagues = 1 predicts Happy.
+
+Trace the previously incorrect 150,000/no-supportive-colleagues example. It now falls in an Unhappy region, so all seven training examples are classified correctly.
+
+Relate the additional boundary to the additional tree question. Greater depth can make more detailed regions, but better training accuracy alone does not establish better predictions on new examples.
+:::
 
 <!-- ## A shallow tree can stop too soon {.model-plot .compact-tree}
 
@@ -899,16 +1028,22 @@ Keep attention on the upper region: only that region receives another split. Bot
 - **D.** A tree predicts by following a path from root to leaf.
 
 ::: {.notes}
-The same labeled training examples are assumed in A; changing features alone does not change the majority label. Ask students to explain why C is false using the salary split.
+Correct answers: B and D. Give students time to choose, then request explanations for at least one false statement.
+
+A is false: changing salary alone, while keeping the same training labels, does not change a most-frequent baseline. B is true for these supervised estimators: prediction uses features and scoring also uses known targets. C is false: salary is numeric, and the tree learns a threshold. D is true: prediction follows questions from root to leaf.
+
+Use any disagreement to identify the specific misconception, rather than repeating the whole lecture.
 :::
 
-## Exit ticket {.model-plot .boundary-plot .smaller}
+
+## Exit ticket {.model-plot .boundary-plot .smaller visibility="hidden"}
 
 A new job offers **$100,000**, **supportive colleagues = 1**, and **free coffee**.
 
 :::: {.columns}
 
 ::: {.column width="70%"}
+
 ```{python}
 nodes = plot_tree(
     model, filled=True,
@@ -923,7 +1058,9 @@ for node in nodes:
         if not line.startswith("samples =")
     ))
 ```
+
 :::
+
 ::: {.column width="30%"}
 
 1. What path and prediction does it get?
@@ -932,10 +1069,14 @@ for node in nodes:
 :::
 ::::
 
-
 ::: {.notes}
-Allow one to two minutes individually or in pairs. The absent boss_vegan value does not prevent hand-tracing this tree, because that feature never appears in it; calling predict with the original fitted estimator would still require the full feature schema.
+If using this hidden exercise, allow one to two minutes individually or in pairs. Answer 1: salary 100,000 goes right at the salary split; supportive colleagues = 1 goes right at the next split; prediction is Happy.
+
+Answer 2: the salary threshold 75,000 or the supportive-colleagues threshold 0.5 is learned; max_depth=2 is a hyperparameter. Answer 3: perfect training accuracy does not establish reliability on new jobs.
+
+Only salary and supportive colleagues are needed to hand-trace this tree. A call to predict must still supply the schema expected by the estimator: the original model used four features, while the later boundary model uses two. Free coffee does not affect this path.
 :::
+
 
 ## Next: will it work on new examples? {.slide-summary}
 
@@ -949,6 +1090,56 @@ Lecture 2: evaluating on unseen data, overfitting, and model complexity.
 More details on this material: [DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
 
 ::: {.notes}
-Additional topics in the course notes: terminology across disciplines, prediction versus statistical inference, DummyRegressor and DecisionTreeRegressor, and further decision-boundary examples. Here inference means applying a fitted model when used operationally; statistical inference asks about population quantities or relationships and their uncertainty. Prediction does not by itself establish causation.
+Recap the completed workflow in one sentence: represent X and y, establish a baseline, fit a tree, trace predictions, and measure training accuracy.
+
+Pause at the final question and invite one response. Expected direction: evaluate on examples whose labels were not used to fit the model. Leave the procedure for Lecture 2, where unseen data, overfitting, and complexity become central.
+
+Point students to the course notes for optional additional detail, then direct them to the reflection. Prediction alone does not establish causation.
 :::
+
+
+## Exit ticket
+
+Check out `Lecture 1 Reflection` on PrairieLearn:
+
+https://us.prairielearn.com/pl/course_instance/226209/assessment_instance/15214453/
+
+::: {.notes}
+Direct students to Lecture 1 Reflection on PrairieLearn and give them a moment to locate it. Invite them to record what they can explain and what remains unclear, according to the prompts in the reflection.
+
+Do not imply a deadline or grading requirement beyond the published course instructions. Close the core lecture here; use the news discussion only if time remains.
+:::
+
+
+## (Optional) AI in the news {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+**[Mathematical discovery](https://www.bbc.com/news/articles/cy7zygy3rl2o):**
+
+OpenAI reports an AI-generated solution to a major problem about fluid motion.
+
+**[Emotional support](https://www.cbc.ca/news/health/ai-teenagers-mental-health-study-9.7327227):**
+
+About one in five students in an Ontario study reported seeking emotional support from AI. The association with emotional problems does not establish causation.
+:::
+:::{.column width="50%"}
+![](img/ai-math-problem.png)
+
+![](img/ai-therapist.png)
+:::
+::::
+
+**What would you want to know before trusting an AI system in either setting?**
+
+::: {.notes}
+Use only if time remains after the reflection. Ask what evidence students would want before trusting each system: how it was tested, whether checks were independent, what happens when it is wrong, and who is accountable.
+
+In mathematics, distinguish a reported solution from a checked argument; verification must address the original mathematical question. For emotional support, ask about evidence of benefit and harm, privacy, crisis handling, and who the findings apply to. An association with emotional problems does not establish that AI use caused them.
+
+Connect back to the lecture: impressive outputs and good results on familiar examples do not settle performance in a new setting. Treat the linked reports as discussion prompts rather than expanding their claims.
+:::
+
 
