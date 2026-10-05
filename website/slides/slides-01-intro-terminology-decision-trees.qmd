@@ -1275,18 +1275,24 @@ The course notes give more detail if you'd like to review today's ideas. Before 
 :::
 
 
-## Exit ticket
+## Exit ticket {background-color="#fce8e6"}
 
-Check out `Lecture 1 Reflection` on PrairieLearn:
+Open the following question on PrairieLearn:
 
-https://us.prairielearn.com/pl/course_instance/226209/assessment_instance/15214453/
+`LR1.1. exit-question-decision-trees-lecture`
+
+Before today’s lab:
+
+- Read the question carefully.
+- Write preparation notes in the provided box (about 5 minutes).
+During lab, discuss the question and explain your reasoning in an oral check-in with your TA to earn participation points.
 
 ::: {.notes}
 Please open Lecture 1 Reflection on PrairieLearn using this link. Take a moment to locate it and read the prompts.
 
 [Pause while students find the reflection.]
 
-Use the reflection to identify what you can explain and what remains unclear. In particular, think about whether you can distinguish training from prediction, explain the baseline, and follow a decision-tree path.
+This gives you practice explaining key concepts in your own words and showing your reasoning, not just giving an answer.
 
 We'll build on these ideas next lecture. Thank you, everyone.
 :::
