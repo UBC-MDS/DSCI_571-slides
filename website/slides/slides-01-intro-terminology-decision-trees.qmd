@@ -67,6 +67,7 @@ Welcome to DSCI 571. Today we'll take the idea of learning from examples and tur
 
 - Lab 1 has been released.
 - DSCI 571 links:
+  - Github page: https://github.ubc.ca/MDS-2026-27/DSCI_571_sup-learn-1_students
   - Course notes: https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/
   - Lecture slides: https://ubc-mds.github.io/DSCI_571-slides/lecture.html
 
@@ -359,7 +360,7 @@ Knowing how to fit a model is only part of the job. We also need to decide wheth
 :::
 
 
-## ❓❓ Rules, ML, or human judgment? {.smaller .slide-your-turn}
+## ❓❓ Rules, ML, or human judgment? {.slide-your-turn}
 
 Choose a starting point for each problem and explain why. Combinations are possible.
 
@@ -381,6 +382,42 @@ For a scholarship essay, we need accountable human judgment about criteria and c
 The consequences matter too: a poor song suggestion and an unfair scholarship decision have very different stakes. Making a prediction doesn't automatically justify handing the decision to a model.
 :::
 
+## (Optional) AI in the news {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+**[Mathematical discovery](https://www.bbc.com/news/articles/cy7zygy3rl2o):**
+
+OpenAI reports an AI-generated solution to a major problem about fluid motion.
+
+**[Emotional support](https://www.cbc.ca/news/health/ai-teenagers-mental-health-study-9.7327227):**
+
+About one in five students in an Ontario study reported seeking emotional support from AI. The association with emotional problems does not establish causation.
+:::
+:::{.column width="50%"}
+![](img/ai-math-problem.png)
+
+![](img/ai-therapist.png)
+:::
+::::
+
+**What would you want to know before trusting an AI system in either setting?**
+
+::: {.notes}
+[Optional discussion; use only if time remains after the reflection.]
+
+These reports give us two settings in which people may be tempted to trust an AI output: mathematical discovery and emotional support. What evidence would you want before trusting a system in either setting?
+
+[Take a few responses.]
+
+For a mathematical result, I'd want to know whether the argument has been independently checked and whether it answers the original question. A reported solution still needs verification.
+
+For emotional support, I'd ask how benefits and harms were evaluated, who was included, and how privacy and difficult situations are handled. An association between AI use and emotional problems doesn't establish that one caused the other.
+
+The connection to today's lecture is evaluation: an impressive output, or success on familiar examples, doesn't settle performance in a new setting. Treat these reports as starting points for questions about evidence.
+:::
 
 ## Rules, ML, or human judgment? {.smaller visibility="hidden"}
 
@@ -1255,40 +1292,4 @@ We'll build on these ideas next lecture. Thank you, everyone.
 :::
 
 
-## (Optional) AI in the news {.smaller}
-
-:::: {.columns}
-
-::: {.column width="50%"}
-
-**[Mathematical discovery](https://www.bbc.com/news/articles/cy7zygy3rl2o):**
-
-OpenAI reports an AI-generated solution to a major problem about fluid motion.
-
-**[Emotional support](https://www.cbc.ca/news/health/ai-teenagers-mental-health-study-9.7327227):**
-
-About one in five students in an Ontario study reported seeking emotional support from AI. The association with emotional problems does not establish causation.
-:::
-:::{.column width="50%"}
-![](img/ai-math-problem.png)
-
-![](img/ai-therapist.png)
-:::
-::::
-
-**What would you want to know before trusting an AI system in either setting?**
-
-::: {.notes}
-[Optional discussion; use only if time remains after the reflection.]
-
-These reports give us two settings in which people may be tempted to trust an AI output: mathematical discovery and emotional support. What evidence would you want before trusting a system in either setting?
-
-[Take a few responses.]
-
-For a mathematical result, I'd want to know whether the argument has been independently checked and whether it answers the original question. A reported solution still needs verification.
-
-For emotional support, I'd ask how benefits and harms were evaluated, who was included, and how privacy and difficult situations are handled. An association between AI use and emotional problems doesn't establish that one caused the other.
-
-The connection to today's lecture is evaluation: an impressive output, or success on familiar examples, doesn't settle performance in a new setting. Treat these reports as starting points for questions about evidence.
-:::
 
