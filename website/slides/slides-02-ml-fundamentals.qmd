@@ -13,7 +13,7 @@ format:
       - slides.scss
       - lecture-formatting.scss
     center: true
-    logo: img/UBC-CS-logo.png
+    logo: img/mds-hex-sticker.png
     resources:
       - data/
       - img/
