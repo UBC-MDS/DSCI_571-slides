@@ -61,9 +61,26 @@ Answer: B. Connect to the job-happiness example: X contains job attributes and y
 Last lecture, we fitted and scored on **the same examples**.
 :::
 
-## A perfect training score? {.slide-your-turn}
+## Remember the decision tree from Lecture 1? 
+```{python}
+import pandas as pd
+from sklearn.dummy import DummyClassifier
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 
-A tree gets every training example right.
+toy_happiness_df = pd.read_csv("data/toy_job_happiness.csv")
+X = toy_happiness_df.drop(columns=['happy?'])
+y = toy_happiness_df['happy?']
+X_subset = X[["supportive_colleagues", "salary"]]
+model = DecisionTreeClassifier(max_depth=2, random_state=1)
+model.fit(X_subset.values, y)
+plot_tree(
+    model, impurity=False, filled=True, feature_names=toy_happiness_df.columns
+);
+print("Model accuracy on the training data: ", model.score(X_subset, y))
+```
+The tree gets every training example right.
+
+## A perfect training score? {.slide-your-turn}
 
 **Would you trust it to predict happiness for a new person? Why?**
 
@@ -99,7 +116,7 @@ Reserve data to evaluate predictions on examples **not used in that fit**.
 
 ## Exam analogy {.slide-your-turn}
 
-Your quiz is two weeks away and you have a set of **practice questions with solutions**.
+Your quiz is coming up soon. I'll give you a set of **practice questions with solutions** next week.
 
 For this analogy, suppose all questions are multiple choice.
 
