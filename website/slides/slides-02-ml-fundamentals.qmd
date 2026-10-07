@@ -86,7 +86,7 @@ Connect directly to Lecture 1's exit ticket. Training performance alone cannot e
 We'll investigate these questions in a **live housing-price demo**.
 
 
-# [Class demo](https://github.com/UBC-CS/cpsc330-2026W1/blob/main/content/classes/varada/lecture-03-ml-fundamentals-demo.ipynb)
+# [Class demo](https://github.ubc.ca/mds-2026-27/DSCI_571_sup-learn-1_students/blob/main/class-demos/demo-02-ml-fundamentals.ipynb)
 
 ## Why split the data?
 
@@ -99,7 +99,7 @@ Reserve data to evaluate predictions on examples **not used in that fit**.
 
 ## Exam analogy {.slide-your-turn}
 
-Imagine your midterm is a few weeks away and you have a set of **practice questions with solutions**.
+Your quiz is two weeks away and you have a set of **practice questions with solutions**.
 
 For this analogy, suppose all questions are multiple choice.
 
@@ -442,18 +442,26 @@ Complete the final evaluation. The opening full-data EDA was also a deliberate s
 ::: {.notes}
 Here “training data” means all non-test data. Inside CV, fit each model—and any learned preprocessing—on its training folds only. Choose a split appropriate to the prediction task. The notebook's initial shortcuts motivate this workflow; they are not steps to copy into a final evaluation.
 :::
+## Exit ticket {background-color="#fce8e6"}
 
-## Exit ticket {.slide-your-turn}
+Open the following assessment on PrairieLearn: `Lecture 2 Reflection`
 
-A classmate proposes choosing the tree with the **highest training score**.
+Before today’s lab:
 
-1. Use today's demo to explain the problem with this proposal.
-2. How would you choose a depth instead?
-3. Which data would you use for the final fit and evaluation?
+- Read the question carefully.
+- Write preparation notes in the provided box (about 5 minutes).
+During lab, discuss the question and explain your reasoning in an oral check-in with your TA to earn participation points.
 
 ::: {.notes}
-Allow one to two minutes individually or in pairs. Expected reasoning: training performance rewards complexity without establishing generalization; compare validation or CV scores; refit the selected configuration on all non-test data and evaluate on the untouched test set.
+Please open Lecture 2 Reflection on PrairieLearn using this link. Take a moment to locate it and read the prompts.
+
+[Pause while students find the reflection.]
+
+This gives you practice explaining key concepts in your own words and showing your reasoning, not just giving an answer.
+
+We'll build on these ideas next lecture. Thank you, everyone.
 :::
+
 
 ## Recap: ML fundamentals {.slide-summary}
 
@@ -466,5 +474,5 @@ Allow one to two minutes individually or in pairs. Expected reasoning: training 
 [DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
 
 ::: {.notes}
-Use the demo workflow to answer each question briefly. The notebook's “Looking back” section provides additional reflection prompts for practice after class.
+Use the demo workflow to answer each question briefly. The notebook's "Looking back" section provides additional reflection prompts for practice after class.
 :::
