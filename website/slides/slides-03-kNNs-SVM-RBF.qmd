@@ -161,36 +161,31 @@ Can a **decision stump** classify these points perfectly now?
 Ask students which feature and threshold they would choose. One split on x² corresponds to two cutoffs on x, at ±sqrt(1.5). Adding a feature makes this example easier to classify; it does not guarantee perfect separation for every dataset.
 :::
 
-## From new features to kernels
+## RBF SVM
 
 **Changing the representation can make classification easier.**
 
-- A tree needed two splits on $x$, but only **one split on $x^2$**.
-- A **support vector machine (SVM)** also learns a decision boundary.
-- **Kernels** let SVMs use a new representation without explicitly building all its features.
+- Adding $x^2$ let a decision stump separate these points with one split.
+- An **RBF support vector machine (SVM)** can learn **curved decision boundaries**.
+- It uses similarity between examples to learn where to place the boundary.
 
 ::: {.notes}
-More precisely, a tree needed two splits on x; a stump could not solve the original problem. The stump illustrates why new features help. SVM learns a different kind of boundary; it is not a transformed decision tree. RBF uses a different mapping from the x² example.
+The x² example motivates changing the representation; RBF does not simply square the inputs. We do not need to construct its new features or explain that feature space in this lecture. The SVM is not a transformed decision tree.
 :::
 
-## Kernels: use the new space without building it {visibility="hidden"}
+## What is a kernel?
 
-**Original points** $x, z$ $\quad\longrightarrow\quad$ **transformed features** $\phi(x), \phi(z)$
+A **kernel** is a function that compares two examples. Here, we interpret its output as **similarity**.
 
-- SVM can work with **dot products between transformed points**.
-- A **kernel** computes those dot products directly from the original points:
-
-$$K(x,z) = \phi(x)^\top\phi(z)$$
-
-::: {.fragment}
-We get the effect of the new representation **without constructing all its features**.
-:::
+- The **RBF kernel** gives nearby points high similarity and distant points low similarity.
+- SVM learns how to combine these similarities to separate the classes.
+- Two hyperparameters shape the result: **`gamma`** and **`C`**.
 
 ::: {.notes}
-The x² example motivates changing the representation. RBF uses a different, implicit feature mapping; it is not simply squaring the inputs. The kernel supplies comparisons; SVM still has to learn a decision boundary.
+RBF stands for radial basis function. The Gaussian RBF is a function of distance; the RBF kernel applies that function to the distance between two examples. Use this distinction if asked, without introducing another formula. Kernels let SVM use a different representation without explicitly constructing its features. Technically, a valid SVM kernel computes an inner product in a feature space; arbitrary similarity functions are not necessarily valid kernels.
 :::
 
-## RBF kernel: distance into similarity
+## RBF similarity
 
 The **radial basis function (RBF)** kernel gives nearby points higher similarity.
 
@@ -203,9 +198,9 @@ $$ K(x,z) = \exp\!\left(-\gamma\|x-z\|^2\right) $$
 - $\|x-z\|$ is the Euclidean distance.
 - $\gamma > 0$ controls **how quickly similarity falls with distance**.
 
-## Intuition for `gamma` {.smaller}
+## How `gamma` changes similarity {.smaller}
 
-$$ K(x,z) = \exp\!\left(-\gamma\|x-z\|^2\right) $$
+$\gamma > 0$ controls **how quickly similarity falls with distance**.
 
 | Distance $r$ | $\gamma = 0.1$ | $\gamma = 1$ | $\gamma = 10$ |
 | --- | --- | --- | --- |
@@ -214,10 +209,36 @@ $$ K(x,z) = \exp\!\left(-\gamma\|x-z\|^2\right) $$
 | 1 | 0.905 | 0.368 | 0.0000454 |
 | 2 | 0.670 | 0.0183 | $4.25\times 10^{-18}$ |
 
-$\gamma > 0$ controls **how quickly similarity falls with distance**.
-
 ::: {.fragment}
-With $\gamma=0.1$, similarity is about **0.9**; with $\gamma=10$, it is almost **zero**.
+At **distance 1**, similarity is about **0.9** with $\gamma=0.1$, but almost **zero** with $\gamma=10$.
+:::
+
+## Intuition for `gamma`
+
+**How far does high similarity extend?**
+
+| Small `gamma` | Large `gamma` |
+| --- | --- |
+| Similarity falls gradually with distance | Similarity falls quickly with distance |
+| Points farther away can still be similar | Only very nearby points are highly similar |
+| Boundaries tend to be smoother | Boundaries can follow individual points more closely |
+
+::: {.notes}
+Hold C fixed when comparing gamma. A large gamma can lead to overfitting; a very small gamma can lead to underfitting. These are tendencies, not guarantees about validation performance.
+:::
+
+## Intuition for `C`
+
+**How strongly do we penalize training mistakes?**
+
+| Small `C` | Large `C` |
+| --- | --- |
+| Stronger regularization | Weaker regularization |
+| More tolerance for training mistakes | More pressure to classify training points correctly |
+| Can allow a simpler boundary | Can allow a more intricate boundary |
+
+::: {.notes}
+Hold gamma fixed when comparing C. Technically, C penalizes margin violations, including misclassified points and correctly classified points inside the margin. “Training mistakes” is the introductory shorthand here; we do not introduce margins in this lecture. Increasing C does not guarantee perfect training accuracy or better validation performance.
 :::
 
 ## Training identifies the support vectors
@@ -246,7 +267,7 @@ For a new query point:
 
 **SVM learns how to combine similarities during training.**
 
-## (Optional) From similarities to a score {.smaller}
+## (Optional) SVM prediction formula {.smaller}
 
 For binary classification, encode **Blue as $-1$** and **Orange as $+1$**:
 
@@ -263,7 +284,7 @@ For example: $\underbrace{1.2(0.8)}_{\text{Orange}}-\underbrace{0.7(0.5)}_{\text
 This arithmetic is an illustrative two-contribution example, not the fitted model in the preceding plot. Unlike kNN majority voting, similarity alone does not determine how strongly a support vector contributes.
 :::
 
-## Two controls: `gamma` and `C` {.smaller}
+## RBF SVM hyperparameters {.smaller}
 
 | Hyperparameter | What does it control? | Increasing it… |
 | --- | --- | --- |
@@ -273,11 +294,18 @@ This arithmetic is an illustrative two-contribution example, not the fitted mode
 - Larger $\gamma$ or $C$ can produce a more intricate boundary and increase overfitting risk.
 - Smaller values can underfit. **Neither direction guarantees better validation performance.**
 
-## See how `gamma` and `C` interact
+## Effect of `gamma` and `C` on decision boundaries
 
 ![](img/svm-controls.svg){.nostretch fig-align="center" height="410" fig-alt="Six fitted RBF SVM boundaries on the same dataset. Columns increase gamma from 0.1 to 10; rows increase C from 0.1 to 100."}
 
-Compare **across a row**, then **down a column**. Choose both using **cross-validation**.
+1. **Across a row:** hold `C` fixed and increase `gamma`.
+2. **Down a column:** hold `gamma` fixed and increase `C`.
+
+Which settings might **underfit** or **overfit**? Choose both using **cross-validation**.
+
+::: {.notes}
+Reveal or discuss one comparison at a time. Ask students to predict how the boundary and training performance change, then discuss possible overfitting. The plots alone cannot establish validation performance.
+:::
 
 ## KNNs vs RBF SVM 
 
@@ -329,25 +357,35 @@ Split $\to$ Explore $\to$ **Compare** $\to$ Refit $\to$ Evaluate
 
 ## Preprocessing motivation: example 
 
-You’re trying to find a suitable date based on:
+Suppose we want to match a student with a compatible roommate using two features:
 
-- Age (closer to yours is better).
-- Number of Facebook Friends (closer to your social circle is ideal).
+- Preferred quiet hours per week.
+- Number of followers on social media.
+
+For this example, we measure similarity using **Euclidean distance**.
 
 ## Preprocessing motivation: example {.smaller}
 
-- You are 30 years old and have 250 Facebook friends.
+- Our student prefers **40 quiet hours per week** and has **25,000 followers**.
 
-| Person | Age | #FB Friends | Euclidean Distance Calculation  | Distance    |
+| Candidate | Quiet hours/week | Followers | Euclidean distance calculation | Distance |
 |--------|-----|-------------|---------------------------------|-------------|
-| A      | 25  | 400         | $\sqrt{5^2 + 150^2}$            | 150.08      |
-| B      | 27  | 300         |  $\sqrt{3^2 + 50^2}$            | 50.09       |
-| C      | 30  | 500         |  $\sqrt{0^2 + 250^2}$           | 250.00      |
-| D      | 60  | 250         |  $\sqrt{30^2 + 0^2}$            | 30.00       |
+| A | 35 | 40,000 | $\sqrt{5^2 + 15{,}000^2}$ | 15,000.00 |
+| B | 37 | 30,000 | $\sqrt{3^2 + 5{,}000^2}$ | 5,000.00 |
+| C | 40 | 50,000 | $\sqrt{0^2 + 25{,}000^2}$ | 25,000.00 |
+| D | 10 | 25,000 | $\sqrt{30^2 + 0^2}$ | 30.00 |
 
 Based on the distances, the two nearest neighbors (2-NN) are:
 
-- **Person D** (Distance: 30.00)
-- **Person B** (Distance: 50.09)
+- **Candidate D** (Distance: 30.00)
+- **Candidate B** (Distance: 5,000.00)
 
 What's the problem here? 
+
+::: {.fragment}
+Follower counts dominate the distance because of their **much larger scale**. Candidate D is closest despite preferring **30 fewer quiet hours per week**!
+:::
+
+::: {.notes}
+Distances are rounded to two decimal places. This is a toy matching example: the point is how feature scales affect Euclidean distance, not that follower counts establish roommate compatibility. Scaling makes the feature magnitudes comparable; choosing useful features is a separate question.
+:::
