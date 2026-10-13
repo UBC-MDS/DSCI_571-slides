@@ -163,8 +163,6 @@ Ask students which feature and threshold they would choose. One split on x² cor
 
 ## RBF SVM
 
-**A boundary that is simple in a new feature space can be curved in the original space.**
-
 - Adding $x^2$ made these points easy to separate with one straight line.
 - RBF SVM uses the same idea, but with a richer feature representation.
 - The **RBF kernel** lets SVM work in that new space using similarities, without explicitly creating the new features.
@@ -182,7 +180,7 @@ hyperparameters rather than the details of that representation.
 
 A **kernel** is a function that compares two examples. Here, we interpret its output as **similarity**.
 
-- The **RBF kernel** gives nearby points high similarity and distant points low similarity.
+- The **Radial Basis Function (RBF) kernel** gives nearby points high similarity and distant points low similarity.
 - SVM learns how to combine these similarities to separate the classes.
 - Two hyperparameters shape the result: **`gamma`** and **`C`**.
 
@@ -218,7 +216,7 @@ $\gamma > 0$ controls **how quickly similarity falls with distance**.
 At **distance 1**, similarity is about **0.9** with $\gamma=0.1$, but almost **zero** with $\gamma=10$.
 :::
 
-## Intuition for `gamma`
+## Intuition for `gamma` {visibility="hidden"}
 
 **How far does high similarity extend?**
 
@@ -233,14 +231,16 @@ Hold C fixed when comparing gamma. A large gamma can lead to overfitting; a very
 :::
 
 
-## `gamma` intuition
+## Intuition for `gamma` {.smaller}
+
+- Small `gamma` ($\gamma$): Similarities falls gradually with distance 
+- Large `gamma` ($\gamma$): Similarities falls quickly with distance 
 
 <iframe
   src="rbf_gaussian.html"
   title="Interactive RBF Gaussian visualization"
   style="width:100%; height:540px; border:0;"
 ></iframe>
-
 
 ## Intuition for `C`
 
@@ -299,7 +299,7 @@ For example: $\underbrace{1.2(0.8)}_{\text{Orange}}-\underbrace{0.7(0.5)}_{\text
 This arithmetic is an illustrative two-contribution example, not the fitted model in the preceding plot. Unlike kNN majority voting, similarity alone does not determine how strongly a support vector contributes.
 :::
 
-## RBF SVM hyperparameters {.smaller}
+## Summary of RBF SVM hyperparameters {.smaller visibility="hidden"}
 
 | Hyperparameter | What does it control? | Increasing it… |
 | --- | --- | --- |
@@ -309,9 +309,9 @@ This arithmetic is an illustrative two-contribution example, not the fitted mode
 - Larger $\gamma$ or $C$ can produce a more intricate boundary and increase overfitting risk.
 - Smaller values can underfit. **Neither direction guarantees better validation performance.**
 
-## Effect of `gamma` and `C` on decision boundaries
+## Effect of `gamma` and `C` on decision boundaries {.smaller}
 
-![](img/svm-controls.svg){.nostretch fig-align="center" height="410" fig-alt="Six fitted RBF SVM boundaries on the same dataset. Columns increase gamma from 0.1 to 10; rows increase C from 0.1 to 100."}
+![](img/svm-controls.svg){.nostretch fig-align="center" height="350" fig-alt="Six fitted RBF SVM boundaries on the same dataset. Columns increase gamma from 0.1 to 10; rows increase C from 0.1 to 100."}
 
 1. **Across a row:** hold `C` fixed and increase `gamma`.
 2. **Down a column:** hold `gamma` fixed and increase `C`.
@@ -346,7 +346,7 @@ Reveal or discuss one comparison at a time. Ask students to predict how the boun
 - (A) In `sklearn`'s RBF `SVC`, increasing `gamma` typically increases the training score, but it does not necessarily increase the validation score.
 - (B) If we increase `gamma` but decrease `C`, we can't be certain whether the model becomes more or less complex.
 
-# [Class demo](https://github.com/UBC-CS/cpsc330-2026W1/blob/main/content/classes/varada/lecture-04-decision-boundaries-KNN-demo.ipynb)
+# [Class demo](https://github.ubc.ca/mds-2026-27/DSCI_571_sup-learn-1_students/blob/main/class-demos/demo-03-decision-boundaries-knn-SVC-demo.ipynb)
 
 # Models
 ## Supervised models we have seen 
