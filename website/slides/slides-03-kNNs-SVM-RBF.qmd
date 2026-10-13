@@ -163,14 +163,19 @@ Ask students which feature and threshold they would choose. One split on x² cor
 
 ## RBF SVM
 
-**Changing the representation can make classification easier.**
+**A boundary that is simple in a new feature space can be curved in the original space.**
 
-- Adding $x^2$ let a decision stump separate these points with one split.
-- An **RBF support vector machine (SVM)** can learn **curved decision boundaries**.
-- It uses similarity between examples to learn where to place the boundary.
+- Adding $x^2$ made these points easy to separate with one straight line.
+- RBF SVM uses the same idea, but with a richer feature representation.
+- The **RBF kernel** lets SVM work in that new space using similarities, without explicitly creating the new features.
+- SVM learns a straight separating boundary there, which can appear **curved in the original space**.
 
 ::: {.notes}
-The x² example motivates changing the representation; RBF does not simply square the inputs. We do not need to construct its new features or explain that feature space in this lecture. The SVM is not a transformed decision tree.
+Point back to the horizontal boundary in the (x, x²) plot:
+it corresponds to two cutoffs on the original x axis.
+RBF uses a different, richer representation; it does not simply
+square the inputs. We will focus on its similarity function and
+hyperparameters rather than the details of that representation.
 :::
 
 ## What is a kernel?
