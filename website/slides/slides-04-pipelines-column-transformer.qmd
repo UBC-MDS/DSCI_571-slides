@@ -31,9 +31,6 @@ editor:
 
 ## Announcements
 
-
-<!-- Add DSCI 571 announcements here. -->
-
 ## Supervised ML workflow
 
 ```{mermaid}
@@ -81,24 +78,32 @@ There isn't a fixed percentage that applies to every project. The takeaway is th
 Think about the assignments so far. Have you spent more time calling fit, or figuring out what the data contains and how to use it?
 :::
 
-## Remember this from last lecture? {.smaller}
+## Preprocessing motivation: example 
 
-- You're trying to find a suitable date based on age and social media followers. 
-- You are 30 years old and have 250 followers.
+Suppose we want to match a student with a compatible roommate using two features:
 
-| Person | Age | # Followers | Euclidean Distance Calculation  | Distance    |
+- Preferred quiet hours per week.
+- Number of followers on social media.
+
+For this example, we measure similarity using **Euclidean distance**.
+
+## Preprocessing motivation: example {.smaller}
+
+- Our student prefers **40 quiet hours per week** and has **25,000 followers**.
+
+| Candidate | Quiet hours/week | Followers | Euclidean distance calculation | Distance |
 |--------|-----|-------------|---------------------------------|-------------|
-| A      | 25  | 400         | $\sqrt{5^2 + 150^2}$            | 150.08      |
-| B      | 27  | 300         |  $\sqrt{3^2 + 50^2}$            | 50.09       |
-| C      | 30  | 500         |  $\sqrt{0^2 + 250^2}$           | 250.00      |
-| D      | 60  | 250         |  $\sqrt{30^2 + 0^2}$            | 30.00       |
+| A | 35 | 40,000 | $\sqrt{5^2 + 15{,}000^2}$ | 15,000.00 |
+| B | 37 | 30,000 | $\sqrt{3^2 + 5{,}000^2}$ | 5,000.00 |
+| C | 40 | 50,000 | $\sqrt{0^2 + 25{,}000^2}$ | 25,000.00 |
+| D | 10 | 25,000 | $\sqrt{30^2 + 0^2}$ | 30.00 |
 
 Based on the distances, the two nearest neighbors (2-NN) are:
 
-- **Person D** (Distance: 30.00)
-- **Person B** (Distance: 50.09)
+- **Candidate D** (Distance: 30.00)
+- **Candidate B** (Distance: 5,000.00)
 
-What's the problem here?
+What's the problem here? 
 
 ## Which models are affected? {.slide-your-turn}
 
@@ -114,35 +119,12 @@ In the age-and-followers example, which models are sensitive to the **relative s
 **Decision trees** split on one feature at a time; changing units allows an equivalent split threshold.
 :::
 
-## Same people, different units {.slide-your-turn}
-
-Suppose we express age in **months instead of years**, leaving follower counts unchanged.
-
-| Person | Distance using years | Distance using months |
-|---|---|---|
-| B | $\sqrt{3^2 + 50^2} \approx 50.09$ | $\sqrt{36^2 + 50^2} \approx 61.61$ |
-| D | $\sqrt{30^2 + 0^2} = 30$ | $\sqrt{360^2 + 0^2} = 360$ |
-
-**Which of these two people is closer now?**
-
-::: {.fragment}
-B replaces D as the closer person. **Only the units changed, not the people.**
-:::
-
-::: {.notes}
-Let's compare just B and D. In years, D is closer: the age difference contributes 30, while B's difference in follower counts is already 50.
-
-Now suppose we record everyone's age in months, including our own. B's age difference becomes 36 months, and D's becomes 360 months. Before looking at the answer, which of these two people is closer now?
-
-It's B. Nothing about either person changed. We only changed the unit used for age, and that changed its influence on distance. If we redo the calculation for all four people, the two nearest neighbours become B and A. We would like our choice of units not to decide the result for us.
-:::
-
 ## Why data representation matters {.smaller}
 
 **Models operate on the representation we give them.**
 
 - **Units:** age in years $\to$ months changes distances without changing the people.
-- **Scales:** ages might range from 18–60, but follower counts from 10–1000. Differences in follower counts can dominate distances.
+- **Scales:** ages might range from 18–60, but follower counts from 10 to 1 million. Differences in follower counts can dominate distances.
 - **Missing entries:** someone leaves their age blank (`age = NaN`). How do we calculate their distance?
 - **Category codes:** suppose we add a favourite hobby: hiking = 0, reading = 1, gaming = 2. Why should hiking be "closer" to reading than gaming?
 
