@@ -124,7 +124,7 @@ In the age-and-followers example, which models are sensitive to the **relative s
 **Models operate on the representation we give them.**
 
 - **Units:** age in years $\to$ months changes distances without changing the people.
-- **Scales:** ages might range from 18–60, but follower counts from 10 to 1 million. Differences in follower counts can dominate distances.
+- **Scales:** ages might range from 18–60, but follower counts from 10 to millions. Differences in follower counts can dominate distances.
 - **Missing entries:** someone leaves their age blank (`age = NaN`). How do we calculate their distance?
 - **Category codes:** suppose we add a favourite hobby: hiking = 0, reading = 1, gaming = 2. Why should hiking be "closer" to reading than gaming?
 
