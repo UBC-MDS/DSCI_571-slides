@@ -1,0 +1,25 @@
+---
+publish-pdf: false
+title: "Lecture 7: Linear models"
+description: "Linear models"
+description-short: "Linear regression, predictions, and squared-error loss; Ridge regression, regularization, and feature scaling; Logistic regression: decision scores, probabilities, and classes; Log loss and regularization with alpha and C; Interpreting coefficients and limitations of linear models"
+editor: { render-on-save: true }
+---
+
+## Slides
+
+[Download slides as PDF](slides/slides-07-linear-models.pdf){.btn .btn-outline-primary .pdf-download download=""}
+
+{{< revealjs "slides/slides-07-linear-models.html" height="600px" class="ratio ratio-16x9" >}}
+
+## Course notes
+
+[DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
+
+## Outline
+
+- Linear regression, predictions, and squared-error loss
+- Ridge regression, regularization, and feature scaling
+- Logistic regression: decision scores, probabilities, and classes
+- Log loss and regularization with alpha and C
+- Interpreting coefficients and limitations of linear models

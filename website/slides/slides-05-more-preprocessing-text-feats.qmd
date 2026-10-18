@@ -1,0 +1,828 @@
+---
+title: "Lecture 5: More preprocessing: categorical features and text"
+author: "Varada Kolhatkar"
+description: "Preprocessing pitfalls, categorical features, and bag of words"
+description-short: "Unknown and rare categories, bag-of-words features, and text pipelines"
+jupyter: python3
+format:
+  revealjs:
+    html-math-method: mathjax
+    slide-number: true
+    slide-level: 2
+    theme:
+      - slides.scss
+      - lecture-formatting.scss
+    center: true
+    logo: img/mds-hex-sticker.png
+    resources:
+      - data/
+      - img/
+execute:
+  echo: false
+  warning: false
+  message: false
+editor:
+  render-on-save: true
+---
+
+```{python}
+#| include: false
+import sys
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.compose import make_column_transformer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import Normalizer, OneHotEncoder, StandardScaler
+from sklearn.svm import SVC
+sys.path.append("code")
+from plotting_functions import plot_improper_processing, plot_proper_processing
+```
+
+## Focus on the breath!
+
+![](img/inukshuk.jpeg){.nostretch fig-align="center" width="500px"}
+
+## Announcements
+
+## Check-in {.slide-your-turn}
+
+**How is the course going for you so far?**
+
+Select all that apply.
+
+- (A) I feel comfortable with both the concepts and the lab work.
+- (B) There is a lot of new material and terminology, but I'm keeping up.
+- (C) I follow the concepts, but struggle to apply them independently in labs.
+- (D) I feel lost and need help getting back on track 😞.
+
+
+::: {.notes}
+Follow up on last week's feedback. Acknowledge the responses and use them to guide support, examples, and connections to the broader MDS program. Students may identify with more than one option.
+:::
+
+## Today's big questions {.slide-goals}
+
+- Which rows may each preprocessing step **learn from**?
+- How should we handle **unseen and rare categories**?
+- How do we **encode text as numerical features**?
+- How do we evaluate the **complete prediction pipeline**?
+
+::: {.notes}
+Lecture 4 built the column transformer. Today we examine preprocessing mistakes, unknown and rare categories, and text.
+:::
+
+## Mistake 1: fitting train and test separately {.slide-your-turn}
+
+**What's wrong here?** Assume we have already split the data.
+
+```python
+train_scaler = StandardScaler()
+train_scaled = train_scaler.fit_transform(X_train)
+
+test_scaler = StandardScaler()
+test_scaled = test_scaler.fit_transform(X_test)
+```
+::: {.notes}
+The two sets use **different means and scales**. We also learn from test data.
+
+Use `train_scaler.transform(X_test)` instead.
+
+Each fit learns a coordinate system. A zero in the training representation means the training mean; a zero in the test representation means the test mean. These need not describe the same original value. Reuse the fitted training scaler, without fitting on the test set.
+:::
+
+## Same age, different coordinates {.slide-your-turn}
+
+Suppose **age is our only feature**:
+
+| Fit the scaler on… | Ages | Mean | Standard deviation |
+|---|---|---:|---:|
+| Training set | 20, 40 | 30 | 10 |
+| Test set | 40, 60 | 50 | 10 |
+
+For a **40-year-old**:
+
+- Training scaler: $(40 - 30) / 10 = +1$
+- Separate test scaler: $(40 - 50) / 10 = -1$
+
+**Should the same age have different coordinates in training and test?** 
+
+
+::: {.notes}
+Both calculations use z = (age - mean) / standard deviation. These are the population standard deviations used by StandardScaler. The age is identical, but separate fits assign it different coordinates. Reusing the training scaler maps every 40-year-old to +1, including unseen respondents.
+:::
+
+## Which respondent becomes the nearest neighbour? {.slide-your-turn}
+
+Training ages **20** and **40** have scaled coordinates **−1** and **+1**.
+
+For the test 40-year-old, which training respondent is nearest?
+
+::: {.fragment}
+
+- Training scaler: coordinate **+1**, nearest to the **40-year-old**.
+- Separate test scaler: coordinate **−1**, nearest to the **20-year-old**.
+
+**Reuse the same fitted transformation for unseen rows.**
+
+:::
+
+::: {.notes}
+If those two training respondents have different labels, 1-NN changes its prediction. Separate fits make the training and test coordinates inconsistent.
+:::
+
+## Mistake 2: fitting on train and test together {.slide-your-turn}
+
+**What's wrong here?**
+
+```python
+X_all = np.vstack([X_train, X_test])
+scaler = StandardScaler().fit(X_all)
+
+train_scaled = scaler.transform(X_train)
+test_scaled = scaler.transform(X_test)
+```
+
+::: {.notes}
+The test rows influence the **learned means and scales**.
+
+Fit only on the available training rows.
+
+Using one coordinate system fixes the first mistake, but fitting on the combined data creates leakage. We don't need to use test labels to leak information.
+:::
+
+## Mistake 3: fitting before cross-validation {.slide-your-turn}
+
+**The test set is untouched. Is this evaluation valid?**
+
+```python
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+
+cross_val_score(
+    KNeighborsClassifier(), X_train_scaled, y_train
+)
+```
+
+::: {.notes}
+Each future validation fold has already influenced the scaler.
+
+Preprocessing must be **fitted again inside each CV fold**.
+:::
+
+## Where the leakage happens {.model-plot}
+
+```{python}
+plot_improper_processing("kNN")
+plt.show()
+```
+
+**The scaler's fit includes the validation fold.** ❌
+
+## Which rows may each step learn from? {.model-plot}
+
+```{python}
+plot_proper_processing("kNN")
+plt.show()
+```
+
+**Within each fold, preprocessing and the model fit on the same training rows.** ✅
+
+## The repair: cross-validate the whole pipeline {background-color="#fce8e6"}
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import cross_val_score
+
+pipe = make_pipeline(StandardScaler(), KNeighborsClassifier())
+cross_val_score(pipe, X_train, y_train)
+```
+
+- Pass **raw features** and the **whole pipeline** to CV.
+- Each fold fits its own preprocessing and classifier.
+- Validation rows receive **transform**, then **predict**.
+
+::: {.notes}
+The golden rule applies to every fit call. A pipeline keeps the steps together so cross-validation can refit them using only the training portion of each fold. After model selection, refit the chosen pipeline on all training rows and evaluate once on the reserved test set.
+:::
+
+## Feature meaning still matters {.smaller}
+
+A pipeline fits the steps we specify. We must choose sensible steps.
+
+| Feature | Question to ask |
+|---|---|
+| Nominal category | Do integer codes invent an order or distance? |
+| Numeric identifier | Does numerical proximity mean anything useful? |
+| Target-derived feature | Would this information exist when predicting? |
+
+**Example:** sale price per square foot reveals the target when combined with floor area.
+
+::: {.notes}
+A pure transaction ID usually offers little that generalizes. Postal codes may contain geographic information and deserve investigation. Education has an order, but ordinal encoding also imposes numeric gaps. Choose representations for the task and model. Trees usually do not need scaling, but arbitrary category codes still constrain threshold splits.
+:::
+
+## Unknown categories
+
+Training majors: **Computer Science, History**.
+
+New majors: **Biology, Physics, History**.
+
+```python
+encoder = OneHotEncoder(sparse_output=False)
+encoder.fit(training_majors)
+encoder.transform(new_majors)  # ValueError: unknown categories
+```
+
+A category can first appear in a validation fold or after deployment.
+
+::: {.notes}
+training_majors and new_majors are one-column DataFrames. The default handle_unknown="error" raises an error. Discover categories from the training rows of each fold, rather than inspecting all data first to avoid this error.
+:::
+
+## Ignoring unknown categories
+
+With `OneHotEncoder(handle_unknown="ignore")`:
+
+| Major | Computer Science | History |
+|---|---:|---:|
+| Computer Science | 1 | 0 |
+| History | 0 | 1 |
+| Biology (unseen) | 0 | 0 |
+| Physics (unseen) | 0 | 0 |
+
+**Biology and Physics become indistinguishable using this feature.**
+
+::: {.notes}
+The encoder keeps the learned columns fixed. Other features may distinguish these people, but this feature cannot. Avoid treating ignore as a universal fix. If unknowns are common, consider a different representation or grouping strategy.
+:::
+
+## (Optional) Dropping a binary indicator
+
+`drop="if_binary"` keeps one column for a two-category feature. With `handle_unknown="ignore"`, suppose **No** is dropped:
+
+| Value | Yes indicator |
+|---|---:|
+| No | 0 |
+| Yes | 1 |
+| Unknown value | 0 |
+
+**An unknown value and the dropped category now share a representation.**
+
+::: {.notes}
+Dropping is optional and can change distances and model behaviour. For nonbinary features, if_binary retains all indicators. The all-zero ambiguity arises when a category is dropped and unknowns are ignored. Check whether that ambiguity suits the task.
+:::
+
+## High-cardinality features
+
+A feature has **high cardinality** when it has many distinct values.
+
+- A postal code may contain useful geographic information.
+- A unique transaction ID may offer little for new transactions.
+- Rare categories may have too little evidence to learn reliable patterns.
+
+Sparse storage reduces memory use. Grouping changes which distinctions the model can learn.
+
+::: {.notes}
+Replacing categories with arbitrary integers saves columns but invents distances. Domain grouping, such as countries into regions, may help when the grouping fits the task. Frequency-based grouping must be learned within each training fold.
+:::
+
+## Grouping infrequent neighbourhoods {.smaller}
+
+| Training neighbourhoods | Occurrences per category |
+|---|---:|
+| Downtown | 40 |
+| Kitsilano | 25 |
+| Mount Pleasant | 15 |
+| Marpole, Renfrew | 4 each |
+| Kerrisdale, Fairview | 3 each |
+| Sunset, Hastings-Sunrise | 2 each |
+| Dunbar, Strathcona, Shaughnessy | 1 each |
+
+**12 categories**, with a long tail of rare values.
+
+::: {.notes}
+Twelve is modest compared with real high-cardinality datasets, but enough to inspect grouping. These are illustrative training frequencies from the chapter, not measured neighbourhood population statistics.
+:::
+
+## From 12 columns to 4
+
+```python
+rare_encoder = OneHotEncoder(
+    min_frequency=5,
+    handle_unknown="infrequent_if_exist",
+    sparse_output=False,
+)
+rare_encoder.fit(training_neighbourhoods)
+rare_encoder.get_feature_names_out()
+```
+
+Downtown, Kitsilano, and Mount Pleasant keep their own columns.
+
+The other **nine categories share one infrequent column**.
+
+::: {.notes}
+training_neighbourhoods is the chapter's one-column DataFrame with the frequencies on the previous slide. min_frequency=5 retains categories occurring at least five times. max_categories can instead cap output columns per input feature, including the infrequent group.
+:::
+
+## What happens to an unseen neighbourhood? {.smaller}
+
+| New value | Downtown | Kitsilano | Mount Pleasant | Infrequent |
+|---|---:|---:|---:|---:|
+| Downtown | 1 | 0 | 0 | 0 |
+| Dunbar | 0 | 0 | 0 | 1 |
+| Marpole | 0 | 0 | 0 | 1 |
+| West End (unseen) | 0 | 0 | 0 | 1 |
+
+**If no infrequent group was learned, an unknown receives all zeros.**
+
+::: {.notes}
+The infrequent_if_exist name is literal. Grouping gives no specific knowledge about West End. Dunbar and Marpole are also indistinguishable using this feature. Learn group membership inside each CV fold.
+:::
+
+## Your turn: what did grouping remove? {.slide-your-turn}
+
+Suppose Dunbar and Marpole have very different typical housing prices.
+
+1. Can the grouped neighbourhood feature express that difference?
+2. Does reducing the number of columns justify grouping?
+3. How would you assess whether grouping helps?
+
+::: {.notes}
+No: their encoded rows match. Pooling may help when individual categories have little evidence, but can hide useful differences. Compare plausible complete pipelines using training-data cross-validation. Memory savings alone do not establish predictive value.
+:::
+
+## iClicker: Exercise 5.1 {.slide-your-turn .smaller}
+
+**Select all statements that are TRUE.**
+
+(A) `handle_unknown="ignore"` creates a column for each unseen category.
+
+(B) With handle_unknown="ignore", different unseen categories receive the same representation for that feature.
+
+(C) Rare-category groups should be learned before cross-validation.
+
+(D) Grouping can remove useful distinctions between categories.
+
+::: {.notes}
+Use this as a quick check of encoder behaviour after the grouping discussion. B and D. Unknowns do not add columns. Frequency-based groups must be learned separately within each training fold. Ask students to explain each answer in terms of the representation.
+:::
+
+## Text as a feature: SMS spam
+
+| Message | Target |
+|---|---|
+| URGENT! Claim your free prize now! | spam |
+| Are we still meeting for lunch tomorrow? | ham |
+
+**How can different messages share useful features?**
+
+::: {.notes}
+These are illustrative messages. The larger dataset uses ham for legitimate, non-spam messages. Introduce corpus as a collection of documents: each SMS is one document.
+:::
+
+## Why not one-hot encode whole messages?
+
+Each distinct message becomes its own category.
+
+- Most complete messages appear only once.
+- Similar messages do not share word-level features.
+- A new message is an unknown category.
+
+We need recurring units smaller than the complete message.
+
+::: {.notes}
+Connect this to high-cardinality identifiers and unknown-category handling. Bag of words shares features for recurring tokens. TF–IDF and embeddings are other representations, beyond today's introduction.
+:::
+
+## Bag of words: build the count matrix
+
+| Document | free | lunch | meeting | now | prize |
+|---|---:|---:|---:|---:|---:|
+| Free prize prize | 1 | 0 | 0 | 0 | 2 |
+| Free lunch now | 1 | 1 | 0 | 1 | 0 |
+| Lunch meeting | 0 | 1 | 1 | 0 | 0 |
+
+One **row per document**, one **column per vocabulary token**.
+
+Each entry counts occurrences. Default lowercasing merges `Free` and `free`.
+
+::: {.notes}
+Ask students to count before revealing or discussing the table. A document can be an email, review, or SMS. Repetition is retained by default. The vocabulary order shown matches get_feature_names_out for these documents.
+:::
+
+## `CountVectorizer`: learn and count
+
+```python
+from sklearn.feature_extraction.text import CountVectorizer
+
+small_messages = [
+    "Free prize prize", "Free lunch now", "Lunch meeting"
+]
+vec = CountVectorizer()
+counts = vec.fit_transform(small_messages)
+vec.get_feature_names_out()
+# ['free', 'lunch', 'meeting', 'now', 'prize']
+```
+
+**`fit` learns the vocabulary. `transform` counts those tokens.**
+
+The output is a **sparse matrix**, which stores nonzero counts efficiently.
+
+::: {.notes}
+Pass a one-dimensional sequence of strings, such as a list or pandas Series. toarray is useful for this tiny matrix, but avoid densifying a large text matrix. Default tokenization retains tokens of at least two word characters and excludes most punctuation and single-character tokens such as I.
+:::
+
+## Your turn: unseen tokens {.slide-your-turn}
+
+Vocabulary: **free, lunch, meeting, now, prize**
+
+What rows does `vec.transform(...)` produce for:
+
+1. “Free meeting tomorrow”
+2. “Tomorrow only”
+
+::: {.fragment}
+1. **[1, 0, 1, 0, 0]**
+2. **[0, 0, 0, 0, 0]**
+
+Unknown tokens are ignored. The learned columns stay fixed.
+:::
+
+::: {.notes}
+An all-zero row need not mean the document is empty or meaningless. None of its tokens is represented in the fitted vocabulary. Refitting would change the feature space expected by the classifier.
+:::
+
+## From messages to predictions
+
+```python
+text_pipe = make_pipeline(CountVectorizer(), SVC())
+```
+
+1. The vectorizer turns raw messages into token counts.
+2. The classifier uses those counts to predict **spam** or **ham**.
+
+**What happens if we change which distinctions the counts preserve?**
+
+::: {.notes}
+This previews the full workflow. The tiny corpus illustrates representations, not classifier performance. Next, consider storage and representation choices. We will evaluate the pipeline on the larger SMS dataset afterward.
+:::
+
+## Counts versus presence
+
+For the vocabulary **free, lunch, meeting, now, prize**:
+
+| Representation of “Free prize prize” | Vector |
+|---|---|
+| Default counts | [1, 0, 0, 0, 2] |
+| `binary=True` | [1, 0, 0, 0, 1] |
+
+```python
+binary_vec = CountVectorizer(binary=True)
+```
+
+Presence keeps whether a token occurred and removes how often it occurred.
+
+::: {.notes}
+Ask whether repetition might be a spam signal. Binary features may help some workflows, but they deliberately remove a distinction. Compare using training-data CV.
+:::
+
+## Occurrence count versus document frequency {.smaller}
+
+Corpus: “Free prize prize”, “Free lunch now”, “Lunch meeting”.
+
+| Token | Total occurrences | Documents containing token |
+|---|---:|---:|
+| free | 2 | 2 |
+| prize | 2 | 1 |
+| lunch | 2 | 2 |
+
+With **`min_df=2`**, `free` and `lunch` survive. `prize` is removed.
+
+Repeating `prize` more within one document does not increase its document frequency.
+
+::: {.notes}
+meeting and now each occur in one document and are also removed. An integer threshold is a document count; a floating-point threshold is a proportion. This distinction is easy to miss, so ask students to explain the filtering before showing code in the chapter.
+:::
+
+## What does bag of words lose?
+
+“the food was good, not bad”
+
+“the food was bad, not good”
+
+These have **the same unigram counts**, but different meanings.
+
+- Word order is lost.
+- Counts alone do not capture context or meaning.
+- **Bigrams** can retain adjacent pairs such as `not bad` and `not good`.
+
+::: {.notes}
+Ask students whether a classifier receiving identical unigram vectors could distinguish these reviews. It cannot: the representation has removed the distinction.
+
+Unigrams are individual tokens; bigrams are adjacent pairs. CountVectorizer(ngram_range=(1, 2)) includes both, allowing these reviews to have different vectors. Adding bigrams increases vocabulary size and introduces rarer patterns. It recovers some local order, without solving general language understanding or negation scope.
+:::
+
+## Bigrams retain some local order
+
+```python
+vec = CountVectorizer(ngram_range=(1, 2))
+```
+
+Include **unigrams** (single tokens) and **bigrams** (adjacent pairs).
+
+- “the food was good, not bad” contains **not bad**.
+- “the food was bad, not good” contains **not good**.
+
+The vectors now differ, but the vocabulary grows and patterns become rarer.
+
+::: {.notes}
+The comma is removed by default tokenization. Bigrams retain local token order, without providing general language understanding. Connect this choice to the representation question before the exercise.
+:::
+
+## What bag of words cannot tell us
+
+- Similar meanings such as `prize` and `reward` get separate features.
+- Different meanings of the same token share a feature.
+- Unseen tokens contribute nothing.
+
+**A classifier cannot recover a distinction absent from its inputs.**
+
+::: {.notes}
+N-grams recover local patterns, but do not supply a complete representation of language. Bag of words remains an inspectable baseline for tasks such as spam filtering. Contextual representations are beyond this chapter.
+:::
+
+## Vocabulary settings {.smaller}
+
+| Setting | Choice | Possible cost |
+|---|---|---|
+| `min_df` | Remove tokens in too few documents | Lose rare signals |
+| `max_df` | Remove tokens in too many documents | Lose useful common words |
+| `max_features` | Cap vocabulary by total term frequency | Frequency is not predictive value |
+| `stop_words` | Remove specified common words | Lose meaning such as negation |
+
+`max_df=0.8` excludes tokens in **more than 80%** of training documents.
+
+**Learn vocabulary filtering inside each CV fold.**
+
+::: {.notes}
+Aggressive thresholds on a small corpus can remove every token. max_features uses corpus occurrence counts, not document frequency or association with the target. Default lowercasing and tokenization are modelling choices too. More elaborate cleanup is not automatically better.
+:::
+
+## iClicker: Exercise 5.2 {.slide-your-turn .smaller}
+
+Compare **“free prize”** and **“free free prize”**.
+
+Which representation makes their rows identical, assuming all relevant tokens and sequences are in the vocabulary?
+
+(A) Default unigram counts
+
+(B) Unigrams with `binary=True`
+
+(C) Counts with `ngram_range=(1, 2)`
+
+::: {.notes}
+B only. Default counts preserve repetition. Unigram-plus-bigram counts preserve the repeated free and introduce free free. This question assumes a shared fitted vocabulary.
+:::
+
+## SMS classification: split first
+
+Use the larger SMS dataset for evaluation.
+
+**Input:** a Series of raw message strings. **Target:** spam or ham.
+
+```python
+X_sms_train, X_sms_test, y_sms_train, y_sms_test = train_test_split(
+    sms_df["sms"], sms_df["target"],
+    test_size=0.2, random_state=123,
+    stratify=sms_df["target"],
+)
+```
+
+::: {.notes}
+The chapter notebook loads and prepares the dataset with:
+
+```python
+sms_df = pd.read_csv("data/spam.csv", encoding="latin-1")
+sms_df = sms_df[["v1", "v2"]].rename(
+    columns={"v1": "target", "v2": "sms"}
+)
+```
+
+The tiny corpus only illustrates features. Reserve the test set before vocabulary learning or choosing settings. Imports: pandas as pd, train_test_split and cross_val_score from sklearn.model_selection, make_pipeline from sklearn.pipeline, and SVC from sklearn.svm.
+:::
+
+## Cross-validate raw message strings
+
+```python
+text_pipe = make_pipeline(CountVectorizer(), SVC())
+scores = cross_val_score(
+    text_pipe, X_sms_train, y_sms_train, cv=5
+)
+print(f"Mean validation accuracy: {scores.mean():.3f}")
+print(f"Always predict ham: {(y_sms_train == 'ham').mean():.3f}")
+```
+
+Each fold learns its vocabulary from **its training messages only**.
+
+**Compare with the majority-class baseline.**
+
+::: {.notes}
+Different folds may learn different vocabulary sizes, since each fits its own classifier. Within a fold, training and validation columns must match. Ham is more common. Accuracy alone does not distinguish missed spam from blocked legitimate messages; later material develops suitable metrics. Run the chapter notebook for actual outputs rather than inventing scores.
+:::
+
+## Fit, predict, and evaluate once
+
+```python
+text_pipe.fit(X_sms_train, y_sms_train)
+text_pipe.predict([
+    "Are we still meeting for lunch tomorrow?",
+    "URGENT! Claim your free prize now!",
+])
+text_pipe.score(X_sms_test, y_sms_test)
+```
+
+Two sample predictions illustrate the API, not performance.
+
+Use the test score for final evaluation of the fixed workflow.
+
+::: {.notes}
+Settings remain fixed for this demonstration. Choose vocabulary and classifier settings using training-data CV. Chapter 6 introduces hyperparameter search.
+:::
+
+## Summary {.slide-summary .smaller}
+
+- Reuse fitted transformations and keep validation rows out of learned preprocessing.
+- Unknown handling and rare grouping determine which categories remain distinguishable.
+- Bag of words shares token features across documents.
+- Binary counts, filters, and n-grams change the information available.
+- Cross-validate the complete pipeline and compare with a baseline.
+
+
+# Extra optional material 
+
+## Backup: categories known independently of the data {.slide-optional}
+
+A published list of **Canadian provinces and territories** can define categories before seeing the dataset.
+
+```python
+encoder = OneHotEncoder(categories=[province_territory_names])
+```
+
+Distinguish a predefined domain from categories discovered by inspecting validation or test rows.
+
+::: {.notes}
+province_territory_names denotes the complete externally specified list. Supplying it does not learn from held-out examples. This does not justify learning frequencies or other preprocessing statistics from held-out data.
+:::
+
+## Optional: choosing a column scale {.slide-optional .smaller}
+
+| Transformer | Learned centre | Learned scale |
+|---|---|---|
+| `StandardScaler` | Mean | Standard deviation |
+| `MinMaxScaler` | Minimum | Range |
+| `RobustScaler` | Median | Interquartile range |
+
+Reuse training quantities for new rows. Min–max-scaled unseen values may fall outside [0, 1].
+
+Robust scaling reduces the influence of extreme values on the fitted centre and scale. It does not remove or clip outliers.
+
+::: {.notes}
+For nonconstant features, MinMaxScaler defaults to (x-min)/(max-min). RobustScaler defaults to subtracting the median and dividing by the IQR, the spread of the middle half. With median 1300 and IQR 600, 1900 becomes 1. Compare complete pipelines with CV when choosing scalers. StandardScaler does not require normality.
+:::
+
+## Backup: why sparse storage? {.slide-optional}
+
+Most words in the vocabulary do not occur in any one message.
+
+`CountVectorizer` returns a **sparse matrix** storing nonzero values and their locations.
+
+```python
+counts.shape       # documents, vocabulary terms
+counts.nnz         # number of nonzero entries
+```
+
+Inspect small slices or nonzero entries instead of calling `.toarray()` on a large matrix.
+
+::: {.notes}
+Sparse storage has bookkeeping overhead, but can save substantial memory when most entries are zero. It changes storage, not the meaning of the count features. OneHotEncoder also returns sparse output by default; sparse_output=False requests a dense result.
+:::
+
+## Optional: centring sparse features {.slide-your-turn .slide-optional}
+
+`StandardScaler` normally subtracts a feature's mean.
+
+**What happens to its zeros when the mean is nonzero?**
+
+::: {.fragment}
+They become nonzero. Centring destroys sparsity and can greatly increase memory use.
+
+`StandardScaler(with_mean=False)` preserves zeros when scaling sparse features.
+:::
+
+::: {.notes}
+StandardScaler rejects centring sparse inputs rather than silently allocating the dense result. Word-count features are not routinely standardized. Row normalization is a separate optional representation choice later in the deck.
+:::
+
+## Optional: normalize document rows {.slide-optional}
+
+Vocabulary: **free, prize, meeting**.
+
+| Count row | Euclidean length | Normalized row |
+|---|---|---|
+| [1, 2, 0] | $\sqrt{5}$ | $[1/\sqrt{5}, 2/\sqrt{5}, 0]$ |
+| [2, 4, 0] | $2\sqrt{5}$ | $[1/\sqrt{5}, 2/\sqrt{5}, 0]$ |
+
+`Normalizer()` divides each nonzero row by its own length.
+
+**What distinction has disappeared?**
+
+::: {.notes}
+Both rows have unit length after default L2 normalization. Relative counts remain, but overall magnitude disappears. A classifier cannot distinguish these rows afterward. This is different from binary=True, which makes every positive count one. The zero row remains zero, and sparse storage is preserved.
+:::
+
+## Optional: evaluate normalization {.slide-optional}
+
+```python
+normalized_text_pipe = make_pipeline(
+    CountVectorizer(), Normalizer(), SVC()
+)
+```
+
+- Column scalers learn statistics across training rows.
+- `Normalizer` processes each row independently.
+- Vocabulary learning still belongs inside each CV fold.
+
+Compare normalized and unnormalized pipelines using training-data CV.
+
+::: {.notes}
+Normalizer learns no population statistics; fit exists for API consistency. Count magnitude can contain useful signals, so normalization is optional. Vocabulary counts also omit ignored tokens and therefore do not capture full document length. Import Normalizer from sklearn.preprocessing.
+:::
+
+## Backup: deciding which features belong {.slide-optional}
+
+Feature availability alone does not establish suitability.
+
+Consider sensitive attributes, proxy variables, measurement quality, fairness goals, and the consequences of errors in the application.
+
+Dropping a sensitive column does not guarantee fairness.
+
+::: {.notes}
+Other features may retain closely related information. Frame this as a modelling judgment in context, rather than a universal inclusion or exclusion rule.
+:::
+
+## Backup: preprocessing the target {.slide-optional}
+
+Classification estimators can usually accept string labels directly.
+
+One-hot encoding the target is unnecessary for the classifiers used here.
+
+Regression targets may be transformed, but predictions must return to the original scale for interpretation.
+
+::: {.notes}
+Later chapters revisit regression target transformations. Feature preprocessing and target preprocessing serve different roles.
+:::
+
+## Backup: combine the survey features {.slide-optional}
+
+[Open the preprocessing demo](https://github.ubc.ca/mds-2026-27/DSCI_571_sup-learn-1_students/blob/main/class-demos/demo-04-05-preprocessing.ipynb)
+
+**Task:** infer a respondent's `like` / `dislike` label from their completed survey.
+
+As we build the column transformer:
+
+1. Trace which columns enter each branch.
+2. Inspect the transformed feature names and shape.
+3. Cross-validate the complete prediction pipeline.
+
+::: {.notes}
+Revisit the Lecture 4 workflow: combining numeric, categorical, and ordinal feature groups. The task is inference from a completed survey, not a prediction of enjoyment before the visit. Keep the final test set reserved while comparing pipelines.
+:::
+
+## Backup: text with other columns {.slide-optional}
+
+```python
+# First replace missing comments with empty strings.
+X_train = X_train.assign(comments=X_train["comments"].fillna(""))
+
+preprocessor_with_text = make_column_transformer(
+    (numeric_pipe, ["age", "n_people", "price"]),
+    (categorical_pipe, ["food_type", "north_america"]),
+    (ordinal_pipe, ["noise_level"]),
+    (CountVectorizer(), "comments"),
+)
+pipe = make_pipeline(preprocessor_with_text, SVC())
+```
+
+Use **`"comments"`**, not `["comments"]`: the vectorizer expects a **1D sequence of strings**.
+
+::: {.notes}
+This connects our two new ideas. The text branch joins the numeric, categorical, and ordinal branches; one classifier receives the combined features. Filling missing comments with a fixed empty string learns no statistics. Apply the same fillna rule to unseen rows before using this pipeline. Empty reviews contribute zeros, provided the training corpus has other usable terms. Fit the vocabulary only inside the pipeline during CV.
+
+[ColumnTransformer documentation: selecting a text column](https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html)
+:::
+

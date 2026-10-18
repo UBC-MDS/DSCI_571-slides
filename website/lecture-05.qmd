@@ -1,0 +1,24 @@
+---
+publish-pdf: false
+title: "Lecture 5: More preprocessing and text features"
+description: " More preprocessing and text features"
+description-short: "Preprocessing pitfalls and data leakage; Handling unseen categories and high-cardinality features; Bag-of-words representations and CountVectorizer; Evaluating text pipelines and comparing with a baseline"
+editor: { render-on-save: true }
+---
+
+## Slides
+
+[Download slides as PDF](slides/slides-05-more-preprocessing-text-feats.pdf){.btn .btn-outline-primary .pdf-download download=""}
+
+{{< revealjs "slides/slides-05-more-preprocessing-text-feats.html" height="600px" class="ratio ratio-16x9" >}}
+
+## Course notes
+
+[DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
+
+## Outline
+
+- Preprocessing pitfalls and data leakage
+- Handling unseen categories and high-cardinality features
+- Bag-of-words representations and CountVectorizer
+- Evaluating text pipelines and comparing with a baseline

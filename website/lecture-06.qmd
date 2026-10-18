@@ -1,0 +1,25 @@
+---
+publish-pdf: false
+title: "Lecture 6: Hyperparameter optimization"
+description: "Hyperparameter optimization"
+description-short: "Motivation and computational cost of hyperparameter optimization; GridSearchCV and RandomizedSearchCV; Pipeline hyperparameters and useful search ranges; Inspecting search results and selecting a model; Optimization bias and final evaluation on the test set"
+editor: { render-on-save: true }
+---
+
+## Slides
+
+[Download slides as PDF](slides/slides-06-hyperparameter-optimization.pdf){.btn .btn-outline-primary .pdf-download download=""}
+
+{{< revealjs "slides/slides-06-hyperparameter-optimization.html" height="600px" class="ratio ratio-16x9" >}}
+
+## Course notes
+
+[DSCI 571 course notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/)
+
+## Outline
+
+- Motivation and computational cost of hyperparameter optimization
+- GridSearchCV and RandomizedSearchCV
+- Pipeline hyperparameters and useful search ranges
+- Inspecting search results and selecting a model
+- Optimization bias and final evaluation on the test set
