@@ -46,8 +46,6 @@ from plotting_functions import plot_improper_processing, plot_proper_processing
 
 ![](img/inukshuk.jpeg){.nostretch fig-align="center" width="500px"}
 
-## Announcements
-
 ## Check-in {.slide-your-turn}
 
 **How is the course going for you so far?**
@@ -62,6 +60,40 @@ Select all that apply.
 
 ::: {.notes}
 Follow up on last week's feedback. Acknowledge the responses and use them to guide support, examples, and connections to the broader MDS program. Students may identify with more than one option.
+:::
+
+## Announcements {.smaller}
+
+- Check out [my handwritten notes for Lecture 4](https://github.ubc.ca/mds-2026-27/DSCI_571_sup-learn-1_students/tree/main/hand-written-notes).
+- Lab 3 repositories have been released.
+- **For this week's quizzes:**
+    - Practice questions are available on PrairieLearn.
+    - Use the learning objectives from Lectures 1–4 to guide your review.
+    - Try active recall: close your notes, explain a concept or solve a problem, then check your understanding.
+- **Extra office hours today:** 12:30–1:30 PM in ICCS 237. Bring your questions, or come work through something you're finding difficult.
+
+**This is a demanding week, and it's understandable to feel overwhelmed. Take it one step at a time. Make room for breaks that help you recharge. Reach out if you find yourself lost. We are here to help.**
+
+
+
+## iClicker: Lecture 4 recap {.slide-your-turn .smaller}
+
+**Select all of the following statements which are TRUE.**
+
+- (A) A `ColumnTransformer` can scale numeric features and one-hot encode categorical features, then feed an estimator in a single `Pipeline`.
+- (B) A scikit-learn `Pipeline` can split the input data into training and test sets.
+- (C) The order of transformations and the estimator in a `Pipeline` matters.
+- (D) In cross-validation of a prediction pipeline, preprocessing is fitted on each training fold and only applied to the validation fold.
+- (E) A `ColumnTransformer` must preserve the original column order in its output.
+
+::: {.notes}
+Correct answers: **A, C, D**.
+
+- A: True. Use the column transformer as the preprocessing step and the predictive estimator as the final pipeline step.
+- B: False. Split the data before fitting the pipeline, for example with `train_test_split`. Cross-validation performs its own fold splitting outside the pipeline.
+- C: True. Each step receives the previous step's output; preprocessing comes before the predictive estimator.
+- D: True. Each fold fits its own preprocessing and estimator using only the training fold. Validation rows are transformed using that fitted preprocessing, then predictions are scored.
+- E: False. Output columns follow the order of the transformer blocks, with any passthrough columns appended. Use `get_feature_names_out()` to inspect the output order.
 :::
 
 ## Today's big questions {.slide-goals}
@@ -115,7 +147,7 @@ For a **40-year-old**:
 Both calculations use z = (age - mean) / standard deviation. These are the population standard deviations used by StandardScaler. The age is identical, but separate fits assign it different coordinates. Reusing the training scaler maps every 40-year-old to +1, including unseen respondents.
 :::
 
-## Which respondent becomes the nearest neighbour? {.slide-your-turn}
+## Which respondent becomes the nearest neighbour? {.slide-your-turn visibility="hidden"}
 
 Training ages **20** and **40** have scaled coordinates **−1** and **+1**.
 
@@ -301,7 +333,7 @@ Replacing categories with arbitrary integers saves columns but invents distances
 | Marpole, Renfrew | 4 each |
 | Kerrisdale, Fairview | 3 each |
 | Sunset, Hastings-Sunrise | 2 each |
-| Dunbar, Strathcona, Shaughnessy | 1 each |
+| Dunbar, Point Grey, Oakridge | 1 each |
 
 **12 categories**, with a long tail of rare values.
 
@@ -362,15 +394,17 @@ No: their encoded rows match. Pooling may help when individual categories have l
 
 (A) `handle_unknown="ignore"` creates a column for each unseen category.
 
-(B) With handle_unknown="ignore", different unseen categories receive the same representation for that feature.
+(B) With `handle_unknown="ignore"`, different unseen categories receive the same representation for that feature.
 
-(C) Rare-category groups should be learned before cross-validation.
+(C) We should use category frequencies from the entire training set to decide which categories to group, then use those same groups in every cross-validation fold.
 
 (D) Grouping can remove useful distinctions between categories.
 
 ::: {.notes}
 Use this as a quick check of encoder behaviour after the grouping discussion. B and D. Unknowns do not add columns. Frequency-based groups must be learned separately within each training fold. Ask students to explain each answer in terms of the representation.
 :::
+
+# Encoding text data 
 
 ## Text as a feature: SMS spam
 
@@ -404,7 +438,7 @@ Connect this to high-cardinality identifiers and unknown-category handling. Bag 
 | Document | free | lunch | meeting | now | prize |
 |---|---:|---:|---:|---:|---:|
 | Free prize prize | 1 | 0 | 0 | 0 | 2 |
-| Free lunch now | 1 | 1 | 0 | 1 | 0 |
+| free lunch now | 1 | 1 | 0 | 1 | 0 |
 | Lunch meeting | 0 | 1 | 1 | 0 | 0 |
 
 One **row per document**, one **column per vocabulary token**.
@@ -421,7 +455,7 @@ Ask students to count before revealing or discussing the table. A document can b
 from sklearn.feature_extraction.text import CountVectorizer
 
 small_messages = [
-    "Free prize prize", "Free lunch now", "Lunch meeting"
+    "Free prize prize", "free lunch now", "Lunch meeting"
 ]
 vec = CountVectorizer()
 counts = vec.fit_transform(small_messages)
@@ -466,10 +500,45 @@ text_pipe = make_pipeline(CountVectorizer(), SVC())
 1. The vectorizer turns raw messages into token counts.
 2. The classifier uses those counts to predict **spam** or **ham**.
 
-**What happens if we change which distinctions the counts preserve?**
-
 ::: {.notes}
 This previews the full workflow. The tiny corpus illustrates representations, not classifier performance. Next, consider storage and representation choices. We will evaluate the pipeline on the larger SMS dataset afterward.
+:::
+
+## Vocabulary settings {.smaller}
+
+| Setting | Choice | Possible cost |
+|---|---|---|
+| `min_df` | Remove tokens in too few documents | Lose rare signals |
+| `max_df` | Remove tokens in too many documents | Lose useful common words |
+| `max_features` | Cap vocabulary by total term frequency | Frequency is not predictive value |
+| `stop_words` | Remove specified common words | Lose meaning such as negation |
+
+`max_df=0.8` excludes tokens in **more than 80%** of training documents.
+
+**Learn vocabulary filtering inside each CV fold.**
+
+::: {.notes}
+Aggressive thresholds on a small corpus can remove every token. max_features uses corpus occurrence counts, not document frequency or association with the target. Default lowercasing and tokenization are modelling choices too. More elaborate cleanup is not automatically better.
+:::
+
+## Occurrence count versus document frequency {.smaller}
+
+Corpus: “Free prize prize”, “Free lunch now”, “Lunch meeting”.
+
+| Token | Total occurrences | Documents containing token |
+|---|---:|---:|
+| free | 2 | 2 |
+| prize | 2 | 1 |
+| lunch | 2 | 2 |
+
+With **`min_df=2`**, `free` and `lunch` survive. `prize` is removed.
+
+Repeating `prize` more within one document does not increase its document frequency.
+
+With **`max_df=0.5`**, tokens in more than half the documents are removed: `free` and `lunch`.
+
+::: {.notes}
+meeting and now each occur in one document and are also removed. An integer threshold is a document count; a floating-point threshold is a proportion. This distinction is easy to miss, so ask students to explain the filtering before showing code in the chapter.
 :::
 
 ## Counts versus presence
@@ -491,22 +560,24 @@ Presence keeps whether a token occurred and removes how often it occurred.
 Ask whether repetition might be a spam signal. Binary features may help some workflows, but they deliberately remove a distinction. Compare using training-data CV.
 :::
 
-## Occurrence count versus document frequency {.smaller}
+## Removing stop words {.smaller}
 
-Corpus: “Free prize prize”, “Free lunch now”, “Lunch meeting”.
+**Stop words** are words we choose to exclude from the vocabulary, often common words such as `the`, `is`, and `and`.
 
-| Token | Total occurrences | Documents containing token |
-|---|---:|---:|
-| free | 2 | 2 |
-| prize | 2 | 1 |
-| lunch | 2 | 2 |
+```python
+vec = CountVectorizer(stop_words=["the", "is", "and"])
+```
 
-With **`min_df=2`**, `free` and `lunch` survive. `prize` is removed.
+“the lunch is free” → **lunch, free**
 
-Repeating `prize` more within one document does not increase its document frequency.
+- Use a custom list or `stop_words="english"` for a built-in list.
+- The default, `stop_words=None`, keeps these words.
+- Removing common words can remove useful signals: “good” and “not good” become identical if we remove `not`.
+
+**Treat stop-word removal as a modelling choice, not automatic cleanup.**
 
 ::: {.notes}
-meeting and now each occur in one document and are also removed. An integer threshold is a document count; a floating-point threshold is a proportion. This distinction is easy to miss, so ask students to explain the filtering before showing code in the chapter.
+The custom list makes the removed words explicit. The built-in English list includes not, so discuss how removing negation can change meaning. Compare complete pipelines using training-data cross-validation. A fixed, manually supplied list does not learn from data; vocabulary and frequency-based filtering still belong inside each training fold.
 :::
 
 ## What does bag of words lose?
@@ -556,23 +627,6 @@ The comma is removed by default tokenization. Bigrams retain local token order, 
 N-grams recover local patterns, but do not supply a complete representation of language. Bag of words remains an inspectable baseline for tasks such as spam filtering. Contextual representations are beyond this chapter.
 :::
 
-## Vocabulary settings {.smaller}
-
-| Setting | Choice | Possible cost |
-|---|---|---|
-| `min_df` | Remove tokens in too few documents | Lose rare signals |
-| `max_df` | Remove tokens in too many documents | Lose useful common words |
-| `max_features` | Cap vocabulary by total term frequency | Frequency is not predictive value |
-| `stop_words` | Remove specified common words | Lose meaning such as negation |
-
-`max_df=0.8` excludes tokens in **more than 80%** of training documents.
-
-**Learn vocabulary filtering inside each CV fold.**
-
-::: {.notes}
-Aggressive thresholds on a small corpus can remove every token. max_features uses corpus occurrence counts, not document frequency or association with the target. Default lowercasing and tokenization are modelling choices too. More elaborate cleanup is not automatically better.
-:::
-
 ## iClicker: Exercise 5.2 {.slide-your-turn .smaller}
 
 Compare **“free prize”** and **“free free prize”**.
@@ -591,7 +645,9 @@ B only. Default counts preserve repetition. Unigram-plus-bigram counts preserve 
 
 ## SMS classification: split first
 
-Use the larger SMS dataset for evaluation.
+**Lab connection:** You'll use this SMS dataset with an SVM and randomized search to tune hyperparameters.
+
+Here, we build the pipeline you'll tune: **raw messages $\to$ token features $\to$ SVM**.
 
 **Input:** a Series of raw message strings. **Target:** spam or ham.
 
@@ -645,8 +701,6 @@ text_pipe.predict([
 ])
 text_pipe.score(X_sms_test, y_sms_test)
 ```
-
-Two sample predictions illustrate the API, not performance.
 
 Use the test score for final evaluation of the fixed workflow.
 
