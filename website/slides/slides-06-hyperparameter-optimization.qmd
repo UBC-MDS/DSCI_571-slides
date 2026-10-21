@@ -564,7 +564,7 @@ The notebook has an optional halving extension. Early rankings with fewer exampl
 
 ## Further reading {.slide-optional}
 
-- [Chapter 8 lecture notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/book/06_hyperparameter-optimization.html)
+- [Chapter 6 lecture notes](https://ubc-mds.github.io/DSCI_571_sup-learn-1_book/book/06_hyperparameter-optimization.html)
 - [scikit-learn hyperparameter-tuning guide](https://scikit-learn.org/stable/modules/grid_search.html)
 - [GridSearchCV API](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html)
 - [RandomizedSearchCV API](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RandomizedSearchCV.html)
