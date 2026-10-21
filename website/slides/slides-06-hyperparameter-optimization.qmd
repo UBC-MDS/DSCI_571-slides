@@ -359,21 +359,9 @@ Using the same lists allows a comparison within the same search space. All-list 
 
 ## Why sample on a log scale? {.smaller}
 
-For `C` and `gamma`, try **multiplicative changes**:
-
-$$0.001 \;\to\; 0.01 \;\to\; 0.1 \;\to\; 1$$
-
-Each step multiplies the value by **10**.
-
-Across the range 0.001 to 1:
-
-| Interval | Uniform sampling | Log-uniform sampling |
-|---|---|---|
-| 0.001–0.01 | About 1% | One third |
-| 0.01–0.1 | About 9% | One third |
-| 0.1–1 | About 90% | One third |
-
 **Log-uniform sampling gives each order of magnitude equal attention.**
+
+![](img/log-uniform-dist){.nostretch fig-align="center" width="500px"}
 
 ::: {.notes}
 The table compares probabilities, not observed sample counts. Uniform sampling weights an interval by its width; log-uniform sampling weights its multiplicative span. Actual finite samples will vary. Neither distribution guarantees good settings: we still choose the bounds.
@@ -439,7 +427,14 @@ Run **Sections 2 and 3**, stopping before final test evaluation.
 Pause before Section 4. Ask students to predict which regions might be useful before interpreting the heatmaps. Discuss the uniform/log-uniform plots as they appear. The distribution search uses a different space, so its score difference does not isolate the search algorithm. Return to slides before showing test accuracy.
 :::
 
-## Winning by guessing {.slide-your-turn}
+## Activity: Winning by guessing {.slide-your-turn}
+
+https://forms.gle/KNmsCqF3ExCD8rEfA
+
+- How many times you tried? 
+- What's your best score? 
+
+## Another example {visibility="hidden"}
 
 A quiz has **10 questions**, each with **4 options**.
 
@@ -457,13 +452,12 @@ Pause for answers. The selected score usually exceeds 25%. On independent new qu
 
 ## More trials, higher score, better model?
 
-**Answer sheets → candidate models; quiz questions → validation examples.**
+**Answer sheets $\to$ candidate models; quiz questions $\to$ validation examples.**
 
 A validation score reflects:
 
 - Predictive ability.
 - Variation from the particular evaluation examples.
-
 Selecting the **highest score** can select a candidate that benefited from favourable noise.
 
 The winning validation score can be **optimistic** about new-data performance. This is **optimization bias**.
@@ -484,20 +478,6 @@ Optional pizza analogy, kept off the slides: practise recipes at home (training)
 
 ::: {.notes}
 An independent evaluation must also be sufficiently large and representative. A disappointing test score should be reported honestly. If it guides further development, obtain fresh held-out evaluation for the revised model. Test accuracy may be above or below CV accuracy because evaluation samples and training sizes differ; a gap alone does not measure optimization bias.
-:::
-
-## Your turn: Find two evaluation problems {.slide-your-turn}
-
-A student:
-
-1. Fits `CountVectorizer` on all song titles **before splitting**.
-2. Searches 200 SVM settings.
-3. Reports the winning `mean_test_score` as **final test accuracy**.
-
-**What went wrong? How would you fix it?**
-
-::: {.notes}
-The vocabulary learned from held-out examples. Split raw data first and put preprocessing inside the searched pipeline. mean_test_score is a CV validation score used for selection. Evaluate the selected refitted pipeline on untouched test data after development is complete.
 :::
 
 ## Demo 3: Evaluate the selected model {.slide-your-turn}
@@ -536,20 +516,6 @@ The selection uses CV only. The search's selected pipeline is already refitted, 
 - Adaptive searches: use intermediate or previous results to allocate computation.
 
 These are extensions, not required for today's core workflow.
-
-## Optional: Nested cross-validation {.slide-optional}
-
-An **outer** CV loop evaluates the whole selection procedure:
-
-1. Run a complete **inner search** within each outer training portion.
-2. Evaluate its selected pipeline on the outer held-out portion.
-3. Summarize the outer evaluation scores.
-
-Evaluation across multiple splits, at greater computational cost.
-
-::: {.notes}
-Outer held-out data must not guide the inner search. Outer scores also require protection from repeated development decisions. This evaluates a selection procedure rather than one fixed fitted model.
-:::
 
 ## Optional: Searches that adapt {.slide-optional}
 
