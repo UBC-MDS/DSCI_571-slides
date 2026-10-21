@@ -32,15 +32,74 @@ editor:
 Take a moment to settle in. Relax your shoulders and take a slow breath in and out.
 :::
 
+## Just to cheer you up! {visibility="hidden"}
+
+![](img/kili.jpeg){.nostretch fig-align="center" width="500px"}
+
+## iClicker: `CountVectorizer` recap {.slide-your-turn .smaller}
+
+**Select all of the following statements which are TRUE.**
+
+- (A) `CountVectorizer` learns its vocabulary during `fit`.
+- (B) With default settings, `CountVectorizer` preserves word order.
+- (C) A word seen only in a validation fold adds a new feature when that fold is transformed.
+- (D) In the code shown, different CV folds might have different numbers of features (columns).
+- (E) Within a CV fold, the training and validation matrices use the same vocabulary and column order.
+
+```python
+# Assume `X_train` is a Series of raw text documents.
+pipe = make_pipeline(CountVectorizer(), SVC())
+cross_validate(pipe, X_train, y_train)
+```
+
+::: {.notes}
+Correct answers: **A, D, E**.
+
+- A: True. The vocabulary is learned from the documents passed to `fit`.
+- B: False. Default unigram bag-of-words counts discard word order.
+- C: False. `transform` ignores words outside the fitted vocabulary; it does not add columns.
+- D: True. Cross-validation fits a fresh pipeline on each training fold. Different training documents can produce different vocabularies and therefore different numbers of columns. The number of columns need not differ in every fold.
+- E: True. Within each fold, the fitted vectorizer transforms both training and validation documents using the vocabulary and column order learned from that fold's training documents.
+
+Imports: `from sklearn.pipeline import make_pipeline`, `from sklearn.feature_extraction.text import CountVectorizer`, `from sklearn.svm import SVC`, and `from sklearn.model_selection import cross_validate`.
+:::
+
 ## Recap: Dealing with text features {.slide-summary}
 
 - Preprocessing text to fit into machine learning models using text vectorization.
-- Bag of words representation
+- Bag of words representation (`CountVectorizer` in `sklearn`)
 
 ![](img/bag-of-words.png){.nostretch fig-align="center" width="700px"}
 
 ::: {.notes}
-Last time we turned text into numerical features. In bag of words, each vocabulary term becomes a feature, and an example is represented by counts or indicators of those terms. We lose word order, but we gain a feature matrix that our models can use. Today we will see how a linear model combines those features using learned weights.
+Last time we turned text into numerical features. In bag of words, each vocabulary term becomes a feature, and an example is represented by counts or indicators of those terms. Today we will tune the text representation and model settings together, keeping both inside cross-validation.
+:::
+
+## Recap: `CountVectorizer` input {.smaller}
+
+Suppose we want to predict whether a user will like a song using its title and lyrics.
+
+**One text column $\to$ a 1D collection of strings** (Series, array, or list).
+
+```python
+CountVectorizer().fit_transform(df["title"])  # Series, not df[["title"]]
+titles = ["Blowin' in the Wind", "Dancing Queen", "Hallelujah"]
+CountVectorizer().fit_transform(titles)
+```
+
+**Multiple text columns $\to$ a separate vectorizer for each column.**
+
+```python
+preprocessor = make_column_transformer(
+    (CountVectorizer(), "title"),  # string selector --> 1D input
+    (CountVectorizer(), "lyrics"),
+)
+```
+
+::: {.notes}
+CountVectorizer expects an iterable of documents, with each document represented by a string. Use a Series, a 1D NumPy array, or a list of strings. A DataFrame is not the intended input: iterating over it yields column names rather than document strings.
+
+In a ColumnTransformer, use a string selector for CountVectorizer, rather than a list containing the column name. Each vectorizer learns its own vocabulary. Import make_column_transformer from sklearn.compose, and place the preprocessor inside the model pipeline for cross-validation.
 :::
 
 ## Today's big questions {.slide-goals}
@@ -67,23 +126,64 @@ We will use slides to explain the choices and a live notebook to run the searche
 A search compares models fitted under different settings. The vocabulary is learned from training documents; its maximum size is a setting we choose. We have already compared tree depths with loops and validation scores.
 :::
 
-## From cross-validation to hyperparameter search
+## Hyperparameter search {.smaller}
 
-For each setting, we already know how to:
+**You have already done this with a for loop!** For classification with numeric features:
 
-1. Fit a model within each CV training fold.
-2. Score it on the corresponding validation fold.
-3. Compare mean validation scores.
+```python
+C_vals = [0.01, 0.1, 1, 10] # Define a parameter space.
+scores = {}
+for C in C_vals: # Iterate through possible values.
+    pipe = make_pipeline(StandardScaler(), SVC(C=C))
+    cv_results = cross_validate(pipe, X_train, y_train, cv=5,
+                                scoring="accuracy") # Evaluate with CV.
+    scores[C] = cv_results["test_score"].mean()
 
-Now automate this workflow for **combinations of settings**.
+# Select best C
+best_C = max(scores, key=scores.get)
+```
+
+**What if we also want to tune `gamma`?** What becomes harder as we add more hyperparameters?
+
+::: {.fragment}
+Today: **grid search** and **randomized search** automate this process and systematically explore combinations of hyperparameters.
+:::
 
 ::: {.notes}
-Recall choosing a tree depth with a loop. The goal is not to maximize training accuracy. Automated tools handle fitting, scoring, bookkeeping, selection, and refitting. We still choose the search space and evaluation procedure.
+Here X_train is a DataFrame or 2D array of numeric features. Import StandardScaler from sklearn.preprocessing. Recall choosing a tree depth with a loop: this is the same workflow, now tuning the SVM's C. Each call to cross_validate fits the entire pipeline independently within each training fold, including the scaler's means and standard deviations. test_score is scikit-learn's name for the held-out CV validation score; the test set is not used.
+
+The loop selects C but does not fit a final model on all training data. More hyperparameters would require more loops and bookkeeping. GridSearchCV automates evaluating combinations, recording scores, selecting settings, and refitting. We still choose the search space and evaluation procedure.
+:::
+
+## From the loop to `GridSearchCV` {.smaller}
+
+Same numeric data, pipeline, candidate values, and five-fold CV:
+
+```python
+pipe = make_pipeline(StandardScaler(), SVC())
+search = GridSearchCV(
+    pipe, param_grid={"svc__C": C_vals},
+    cv=5, scoring="accuracy",
+)
+search.fit(X_train, y_train)
+search.best_params_
+```
+
+It records the scores, selects `C`, and **refits the selected pipeline on all training data**.
+
+To tune `gamma` too, add another entry to `param_grid`.
+
+::: {.notes}
+Import GridSearchCV from sklearn.model_selection. This evaluates the same C values as the loop using the same default CV splits. Unlike the loop, the search refits by default. svc__C identifies C inside the pipeline's SVC step; we unpack this naming convention shortly.
 :::
 
 ## Choosing a candidate pipeline
 
-Our demo predicts whether a listener **likes a song**.
+Our [demo](https://github.ubc.ca/mds-2026-27/DSCI_571_sup-learn-1_students/blob/main/class-demos/demo-06-hyperparameter-optimization.ipynb) predicts whether a listener **likes a song**.
+
+**Inputs:** song-title text plus numerical, categorical, and binary song features.
+
+**Target:** whether this listener likes the song (like/dislike).
 
 We will tune a pipeline with:
 
@@ -93,33 +193,33 @@ We will tune a pipeline with:
 The settings interact: **changing the representation can change which model settings work well**.
 
 ::: {.notes}
-The Spotify target describes one listener's preference, not universal song quality. We omit artist identity. The notebook constructs the column transformer and compares a most-frequent baseline with the default SVC using CV. Keep all preprocessing inside the searched pipeline.
+The Spotify target describes one listener's preference, not universal song quality. The earlier title-and-lyrics example was hypothetical; this demo uses song titles alongside other song features, rather than lyrics. We omit artist identity. In the notebook, point out the actual numerical feature names when inspecting the data. The notebook constructs the column transformer and compares a most-frequent baseline with the default SVC using CV. Keep all preprocessing inside the searched pipeline.
 :::
 
 ## Why does tuning get expensive? {.slide-your-turn .smaller}
 
 The demo tries every combination of:
 
-- **2** vocabulary sizes (`max_features`).
-- **4** regularization settings (`C`).
-- **4** RBF kernel settings (`gamma`).
+- **3** vocabulary sizes (`max_features`): 10, 100, 400.
+- **4** regularization settings (`C`): 0.01, 0.1, 1, 10.
+- **3** RBF kernel settings (`gamma`): 0.001, 0.01, 0.1.
 
 How many model fits does **five-fold cross-validation** require?
 
 ::: {.fragment}
-$$2 \times 4 \times 4 = 32\text{ candidate pipelines}$$
-$$32 \times 5 = 160\text{ CV fits}$$
+$$3 \times 4 \times 3 = 36\text{ candidate pipelines}$$
+$$36 \times 5 = 180\text{ CV fits}$$
 
 **More combinations and more folds mean more fits.**
 :::
 
 ::: {.notes}
-Each CV fit trains the entire pipeline, including preprocessing. The 160 fits exclude the final refit of the selected pipeline on all training data. With five hyperparameters and ten values each, there are 100,000 candidates and 500,000 CV fits. Automation alone does not reduce this cost if it evaluates the same candidates and folds.
+Each CV fit trains the entire pipeline, including preprocessing. The 180 fits exclude the final refit of the selected pipeline on all training data (181 fits in total with refit=True). With five hyperparameters and ten values each, there are 100,000 candidates and 500,000 CV fits. Automation alone does not reduce this cost if it evaluates the same candidates and folds.
 :::
 
 ## Demo 1: Data, pipeline, and baseline {.slide-your-turn}
 
-[Class Demo]()
+[Class Demo](https://github.ubc.ca/mds-2026-27/DSCI_571_sup-learn-1_students/blob/main/class-demos/demo-06-hyperparameter-optimization.ipynb)
 
 Run **Section 1**:
 
@@ -133,14 +233,6 @@ Run **Section 1**:
 
 Run Section 1 only, then return to slides. Each transformer may learn only from the fold's training portion. The pipeline is what enforces this. CountVectorizer receives the string column selector song_title; other transformers receive lists of columns.
 :::
-
-## Hyperparameter optimization with loops {.slide-your-turn}
-
-- Define a parameter space.
-- Iterate through possible combinations.
-- Evaluate model performance.
-
-What are some limitations of this approach?
 
 ## Two ways to search in `sklearn` {.smaller}
 
@@ -161,11 +253,17 @@ Neither guarantees the best possible settings on future data. Both support paral
 pipe_svm = make_pipeline(preprocessor, SVC())
 ```
 
-| Search key | What changes? |
-|---|---|
-| `svc__C` | SVM's `C` |
-| `svc__gamma` | SVM's `gamma` |
-| `columntransformer__countvectorizer__max_features` | Song-title vocabulary limit |
+`svc__C`: **pipeline step $\to$ setting** (the SVM's `C`).
+
+::: {.fragment}
+For the vocabulary limit, go one level deeper:
+
+```text
+columntransformer__countvectorizer__max_features
+```
+
+**Pipeline step $\to$ transformer $\to$ setting**
+:::
 
 Use **`step__parameter`**, nesting further when needed.
 
@@ -177,9 +275,10 @@ These names come from make_pipeline and make_column_transformer. Inspect pipe_sv
 
 ```python
 param_grid = {
-    "columntransformer__countvectorizer__max_features": [100, 400],
-    "svc__gamma": [0.001, 0.01, 0.1, 1.0],
-    "svc__C": [0.01, 0.1, 1.0, 10.0],
+    "columntransformer__countvectorizer__max_features":
+        [10, 100, 400],
+    "svc__gamma": [0.001, 0.01, 0.1],
+    "svc__C": [0.01, 0.1, 1, 10],
 }
 grid_search = GridSearchCV(
     pipe_svm, param_grid, cv=5, scoring="accuracy",
@@ -211,6 +310,22 @@ It is not a score on our reserved test set.
 The search object can predict directly after refitting. Training scores help diagnose fitting behaviour; std_test_score describes fold variation, not a confidence interval for future accuracy. In the demo, inspect the compact table rather than the whole results dictionary.
 :::
 
+## Reading search results {.slide-your-turn .smaller}
+
+**Illustrative results, not demo output.** Vocabulary size is fixed at 100.
+
+| `C` | `gamma` | Mean CV accuracy | Fold SD | Mean fit time |
+|---|---|---|---|---|
+| 0.1 | 0.01 | 0.78 | 0.04 | 0.2 s |
+| 1 | 0.01 | 0.82 | 0.03 | 0.3 s |
+| 10 | 0.1 | 0.821 | 0.05 | 3.0 s |
+
+**Would you choose a much slower model for a tiny score improvement?**
+
+::: {.notes}
+These invented values illustrate the columns in cv_results_: param_svc__C, param_svc__gamma, mean_test_score, std_test_score, and mean_fit_time. Fold SD describes variation across folds; it is not a confidence interval. A tiny difference does not establish a reliable improvement. Fit time measures training cost, not prediction latency. If choosing a simpler or faster candidate rather than the top-scoring one, make that decision using training-set CV and refit that candidate before test evaluation.
+:::
+
 ## Choosing useful search ranges
 
 - For positive scale settings such as `C` and `gamma`, explore **orders of magnitude**.
@@ -234,7 +349,7 @@ list_search = RandomizedSearchCV(
 list_search.fit(X_train, y_train)
 ```
 
-- Sample **20 of the grid's 32 combinations**.
+- Sample **20 of the grid's 36 combinations**.
 - `random_state` makes candidate sampling reproducible.
 - `n_iter` counts **candidates**, not folds or elapsed time.
 
@@ -242,7 +357,29 @@ list_search.fit(X_train, y_train)
 Using the same lists allows a comparison within the same search space. All-list configurations are sampled without replacement. A smaller budget can miss the grid's winner. Random search is not inherently faster per fit; fewer candidates reduce total work.
 :::
 
-## Sample distributions instead of lists
+## Why sample on a log scale? {.smaller}
+
+For `C` and `gamma`, try **multiplicative changes**:
+
+$$0.001 \;\to\; 0.01 \;\to\; 0.1 \;\to\; 1$$
+
+Each step multiplies the value by **10**.
+
+Across the range 0.001 to 1:
+
+| Interval | Uniform sampling | Log-uniform sampling |
+|---|---|---|
+| 0.001–0.01 | About 1% | One third |
+| 0.01–0.1 | About 9% | One third |
+| 0.1–1 | About 90% | One third |
+
+**Log-uniform sampling gives each order of magnitude equal attention.**
+
+::: {.notes}
+The table compares probabilities, not observed sample counts. Uniform sampling weights an interval by its width; log-uniform sampling weights its multiplicative span. Actual finite samples will vary. Neither distribution guarantees good settings: we still choose the bounds.
+:::
+
+## Sample distributions instead of lists {.smaller}
 
 ```python
 param_dist = {
@@ -278,14 +415,14 @@ The horizontal dimension matters more in the illustration. Random sampling over 
 
 ## Your turn: Count the fits {.slide-your-turn}
 
-The demo uses **32 grid candidates**, **five-fold CV**, and the default final refit.
+The demo uses **36 grid candidates**, **five-fold CV**, and the default final refit.
 
 1. How many pipeline fits does grid search require?
 2. How many does random search require with `n_iter=20`?
 3. What do we give up by evaluating fewer candidates?
 
 ::: {.notes}
-Grid: 32 × 5 + 1 = 161. Random: 20 × 5 + 1 = 101. The extra fit refits the selected pipeline on all training data. Random search leaves combinations unevaluated and may miss a useful candidate. Parallelism changes elapsed time, not the fit count.
+Grid: 36 × 5 + 1 = 181. Random: 20 × 5 + 1 = 101. The extra fit refits the selected pipeline on all training data. Random search leaves combinations unevaluated and may miss a useful candidate. Parallelism changes elapsed time, not the fit count.
 :::
 
 ## Demo 2: Run and inspect the searches {.slide-your-turn}
@@ -293,30 +430,13 @@ Grid: 32 × 5 + 1 = 161. Random: 20 × 5 + 1 = 101. The extra fit refits the sel
 Run **Sections 2 and 3**, stopping before final test evaluation.
 
 - Inspect selected settings, scores, and timings.
-- Compare the heatmaps for vocabulary sizes 100 and 400.
+- Compare `C`–`gamma` heatmaps at fixed vocabulary sizes (10, 100, and 400).
 - Try random search with lists and distributions.
 
 **Where would you spend more computation?**
 
 ::: {.notes}
 Pause before Section 4. Ask students to predict which regions might be useful before interpreting the heatmaps. Discuss the uniform/log-uniform plots as they appear. The distribution search uses a different space, so its score difference does not isolate the search algorithm. Return to slides before showing test accuracy.
-:::
-
-## More trials, higher score, better model?
-
-A validation score reflects:
-
-- Predictive ability.
-- Variation from the particular evaluation examples.
-
-Selecting the **highest score** can select a candidate that benefited from favourable noise.
-
-The winning validation score can be **optimistic** about new-data performance.
-
-::: {.notes}
-This selection effect is optimization bias, also called overfitting the validation set. It differs from overfitting the training examples.
-
-Optional pizza analogy, kept off the slides: practise recipes at home (training), ask friends to taste (validation), repeatedly adjust for their ratings (selection), then serve competition judges (test). Tailoring the recipe to those friends may not generalize. Optimization bias can arise even when friends and judges come from the same population; distribution mismatch is not required.
 :::
 
 ## Winning by guessing {.slide-your-turn}
@@ -329,8 +449,29 @@ A quiz has **10 questions**, each with **4 options**.
 
 **Will the winning sheet usually exceed 25%?**
 
+**What would you expect on a fresh set of questions?**
+
 ::: {.notes}
 Pause for answers. The selected score usually exceeds 25%. On independent new questions, expected accuracy remains 25%. Selection improved the observed score without adding knowledge. Questions represent validation examples and answer sheets represent candidates. Adapted from the random-answer example attributed to Rodolfo Lourenzutti in Chapter 8. Real model candidates are correlated, so this analogy does not quantify bias in our search.
+:::
+
+## More trials, higher score, better model?
+
+**Answer sheets → candidate models; quiz questions → validation examples.**
+
+A validation score reflects:
+
+- Predictive ability.
+- Variation from the particular evaluation examples.
+
+Selecting the **highest score** can select a candidate that benefited from favourable noise.
+
+The winning validation score can be **optimistic** about new-data performance. This is **optimization bias**.
+
+::: {.notes}
+This selection effect is optimization bias, also called overfitting the validation set. It differs from overfitting the training examples.
+
+Optional pizza analogy, kept off the slides: practise recipes at home (training), ask friends to taste (validation), repeatedly adjust for their ratings (selection), then serve competition judges (test). Tailoring the recipe to those friends may not generalize. Optimization bias can arise even when friends and judges come from the same population; distribution mismatch is not required.
 :::
 
 ## Final evaluation: Protect the test set {background-color="#fce8e6"}
@@ -371,6 +512,8 @@ selected_search.score(X_test, y_test)
 
 **Why might this differ from `best_score_`?**
 
+Choosing among searches is **another selection step**. Different search spaces also affect which candidates can win.
+
 ::: {.notes}
 The selection uses CV only. The search's selected pipeline is already refitted, so score can evaluate it directly. Different samples, different training sizes, and selection effects can all contribute to differences. Stop here for the core demo. Do not use the displayed test result to revise the search. The notebook's optional extension is a separate training-only experiment.
 :::
@@ -384,6 +527,15 @@ The selection uses CV only. The search's selected pipeline is already refitted, 
 - Count **candidates $\times$ folds + final refit**.
 - Selection can make the winning CV score optimistic.
 - Finish with an **untouched test set**.
+
+## Optional extensions {.slide-optional}
+
+**The core lecture ends here.**
+
+- Nested CV: evaluate the whole model-selection procedure.
+- Adaptive searches: use intermediate or previous results to allocate computation.
+
+These are extensions, not required for today's core workflow.
 
 ## Optional: Nested cross-validation {.slide-optional}
 
