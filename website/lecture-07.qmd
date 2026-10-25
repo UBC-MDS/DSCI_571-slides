@@ -2,7 +2,7 @@
 publish-pdf: false
 title: "Lecture 7: Linear models"
 description: "Linear models"
-description-short: "Linear regression, predictions, and squared-error loss; Ridge regression, regularization, and feature scaling; Logistic regression: decision scores, probabilities, and classes; Log loss and regularization with alpha and C; Interpreting coefficients and limitations of linear models"
+description-short: "Notation and matrix shapes; Linear regression and MSE; Ridge, scaling, and alpha; Logistic regression and binary cross-entropy; Parametric and non-parametric models"
 editor: { render-on-save: true }
 ---
 
@@ -18,8 +18,8 @@ editor: { render-on-save: true }
 
 ## Outline
 
-- Linear regression, predictions, and squared-error loss
-- Ridge regression, regularization, and feature scaling
-- Logistic regression: decision scores, probabilities, and classes
-- Log loss and regularization with alpha and C
-- Interpreting coefficients and limitations of linear models
+- Notation: vectors, matrices, transpose, and shapes
+- Linear regression and mean squared-error loss across examples
+- Ridge regression: regularization, scaling, `alpha`, and model complexity
+- Logistic regression: scores, probabilities, binary cross-entropy, and `C`
+- Parametric versus non-parametric models
