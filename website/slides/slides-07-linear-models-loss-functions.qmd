@@ -52,27 +52,30 @@ Before we begin, take a moment to settle in. Put your feet on the floor, relax y
 
 ## Announcements
 
-## Recap: What does fitting learn? {.slide-your-turn}
+## iClicker: Hyperparameter search recap {.slide-your-turn .smaller}
 
 ```python
-search = GridSearchCV(
+search = RandomizedSearchCV(
     make_pipeline(StandardScaler(), SVC()),
-    {"svc__C": [0.1, 1, 10]}, cv=5,
+    {"svc__C": loguniform(1e-2, 1e2),
+     "svc__gamma": loguniform(1e-3, 1e1)},
+    n_iter=20, cv=5, random_state=123,
 )
 search.fit(X_train, y_train)
 ```
 
-Which quantities are learned within each training fold, and which setting does the search compare?
+Select all statements that are **true**.
 
-- Scaling means and standard deviations
-- The SVM's fitted decision rule
-- `C`
+- **A.** The search samples 20 candidate combinations, each evaluated using five-fold CV.
+- **B.** For `C`, the intervals 0.01–0.1, 0.1–1, 1–10, and 10–100 are equally likely.
+- **C.** By default, the selected pipeline is refitted on all of `X_train`.
+- **D.** Increasing `n_iter` guarantees better performance on new data.
 
 ::: {.notes}
-Allow a minute for pairs. The scaler learns means and standard deviations from that fold's training portion. SVC fits a decision rule using the candidate C; we do not need its internal details here. GridSearchCV compares candidate C values using validation scores; C is not learned by SVC.fit. The default final refit fits the selected pipeline on all the supplied training data. Today we introduce linear models and examine the coefficients they learn during fitting.
+Opening recap: allow about one minute to vote, then discuss within the four-minute opening allocation. Correct answers: A, B, and C. RandomizedSearchCV samples 20 candidate C/gamma combinations and evaluates each with five-fold CV. Log-uniform sampling gives equal probability to equal-width intervals on the logarithmic scale: each of the four tenfold C intervals has probability one quarter. It does not give equal probability to equal-width intervals on the original scale. With default refit=True, the selected pipeline is fitted again on all supplied training data. Each fold fits its scaler using only that fold's training portion. More candidates can improve the best observed CV score without improving generalization; model selection can overfit validation results. The code assumes the familiar imports from sklearn.model_selection, sklearn.pipeline, sklearn.preprocessing, sklearn.svm, and scipy.stats.loguniform. If votes are split, invite a short neighbour discussion and revote. Transition: search chooses hyperparameter settings, while each candidate's fit learns a prediction rule. Today we examine the coefficients that linear models learn during fitting.
 :::
 
-## Today’s roadmap {.slide-goals .smaller}
+## Today’s roadmap {.slide-goals}
 
 1. **Notation:** represent examples, features, and targets.
 2. **Linear regression and MSE:** predict, then measure error.
@@ -106,7 +109,22 @@ Match each symbol to a meaning.
 | $d$ | F. Number of examples |
 
 ::: {.notes}
-Allow one minute individually, then thirty seconds to compare with a neighbour. The two columns are independent lists: match symbols to letters rather than reading across each row. Answers: X → B, y → E, x_i → D, y hat → C, n → F, d → A. Ask which symbols were unfamiliar before advancing. Use the next slide to explain the matches with the student data rather than requiring students to memorize abstract definitions. Coefficients and transpose are introduced after this retrieval exercise.
+Allow one minute individually, then thirty seconds to compare with a neighbour. The two columns are independent lists: match symbols to letters rather than reading across each row. Answers: X → B, y → E, x_i → D, y hat → C, n → F, d → A. Ask which symbols were unfamiliar before advancing. Use the next slide to reveal the matches, then connect them to the student data on the following slide. Coefficients and transpose are introduced after this retrieval exercise.
+:::
+
+## Notation: Answers {.smaller}
+
+| Symbol | Match | Meaning |
+|---|:---:|---|
+| $X$ | B | Feature matrix |
+| $\mathbf y$ | E | Observed targets |
+| $\mathbf x_i$ | D | Features of example $i$ |
+| $\hat{\mathbf y}$ | C | Predicted targets |
+| $n$ | F | Number of examples |
+| $d$ | A | Number of represented features |
+
+::: {.notes}
+Reveal after the matching discussion. Ask students to check their answers and clarify any unfamiliar symbols. Emphasize observed versus predicted targets and examples versus features. Keep the reveal brief within the ten-minute notation allocation. The next slide connects these symbols to the student table.
 :::
 
 ## From a data table to a matrix {.smaller}
@@ -162,10 +180,28 @@ Connect each answer to the preceding exercise. The values do not change, but the
 
 # Linear regression and MSE
 
-How do we make predictions—and choose a useful line?
+How do we make predictions and choose a useful model?
 
 ::: {.notes}
 18 minutes including the connected loss activity. Reuse the student-grade data; prediction first, then a criterion for choosing coefficients.
+:::
+
+## Learning a prediction function {.smaller}
+
+In supervised learning, we use training examples to learn a function that maps features to a prediction:
+
+$$\mathbf x\ \longrightarrow\ \hat f(\mathbf x)\ \longrightarrow\ \hat y$$
+
+So far, our models have represented this function using:
+
+- **Decision trees:** a sequence of splits.
+- **$k$-NN:** targets of nearby training examples.
+- **RBF SVMs:** flexible decision boundaries.
+
+**Linear regression restricts the prediction function to a weighted sum of the represented features plus an intercept.**
+
+::: {.notes}
+Keep this introduction to about one minute within the existing 18-minute regression allocation. Training pairs X and y provide examples from which we learn a prediction function; for a new example x, that function produces y hat. Previous model families also impose assumptions, so avoid suggesting they were assumption-free. Here we explicitly restrict the form of the prediction function. This is a modelling choice, not a claim that the true relationship must be linear or every target must lie on a line. Say linear in the represented features, since preprocessing determines those inputs. The next slide makes the restriction concrete with one feature and a straight line. Later, logistic regression keeps the weighted score but applies a sigmoid to obtain a probability.
 :::
 
 ## Linear regression: One feature {.model-plot .smaller}
@@ -253,18 +289,18 @@ $$\underbrace{X}_{3\times2}\quad
 \underbrace{\mathbf w=\begin{bmatrix}4\\2\end{bmatrix}}_{2\times1}
 \quad b=45$$
 
-1. What is the shape of $X\mathbf w$? Why does it make sense for three students?
+1. What is the shape of $X\mathbf w$?
 2. What is the shape of $\mathbf w^{\mathsf T}\mathbf x_1$, the weighted sum for one student?
-3. Does adding the intercept change either shape?
+3. Do $\mathbf w^{\mathsf T}\mathbf x_1$ and $\mathbf x_1^{\mathsf T}\mathbf w$ give the same value? Use $\mathbf x_1=[5,6]^{\mathsf T}$.
 
 ::: {.fragment}
 $(3\times2)(2\times1)\rightarrow3\times1$: **one value per student**.
 
-$(1\times2)(2\times1)\rightarrow1\times1$: **one weighted sum**.
+$(1\times2)(2\times1)\rightarrow1\times1$: **one weighted sum**. Both dot-product orders give $32$.
 :::
 
 ::: {.notes}
-Allow a minute before revealing the answers. The inner dimensions must match; the outer dimensions give the result's shape. For Xw, every row supplies two values to multiply by the same two weights, producing one result per student. For w transpose x_1, the dot product is a scalar, represented here as a 1 by 1 result. Adding b to every entry does not change the shape. The coefficients have shape d by 1 and the intercept is scalar. Ask students to explain the output in words before applying the dimension rule. The next slide computes all three predictions.
+Allow about ninety seconds before revealing the answers. Both products have shape (1 by d)(d by 1) and produce the same scalar for real vectors: 4×5 + 2×6 = 5×4 + 6×2 = 32. Adding the intercept gives 77. This equality does not mean matrix multiplication can generally be reversed. The inner dimensions must match; the outer dimensions give the result's shape. For Xw, every row supplies two values to multiply by the same two weights, producing one result per student. For w transpose x_1, the dot product is a scalar, represented here as a 1 by 1 result. Adding b to every entry does not change the shape. The coefficients have shape d by 1 and the intercept is scalar. Ask students to explain the output in words before applying the dimension rule. The next slide computes all three predictions.
 :::
 
 ## One rule for every example {.smaller}
@@ -350,24 +386,24 @@ Each example contributes a squared error; the **mean** combines all examples int
 Walk from observed targets and predictions to the residual vector. Ask which prediction is too high: the first, because its residual is negative. The squared errors are 4, 9, and 9. Sum all three before dividing by n=3. These are the same students and hypothetical parameters used earlier. This example explains the calculation, not an independent evaluation of a fitted model. No norm notation is needed.
 :::
 
-## Your turn: Compare two candidates {.slide-your-turn .smaller}
+## Your turn: Compare two candidates {.slide-your-turn}
 
-$$X=\begin{bmatrix}2\\5\end{bmatrix},\qquad
-\mathbf y=\begin{bmatrix}18\\20\end{bmatrix}$$
+$$X=\begin{bmatrix}5&6\\2&3\\7&5\end{bmatrix},\qquad
+\mathbf y=\begin{bmatrix}75\\62\\86\end{bmatrix}$$
 
 | Candidate | $\mathbf w$ | $b$ | $\hat{\mathbf y}=X\mathbf w+b$ | MSE |
 |---|---|---:|---|---:|
-| A | $[3]$ | $10$ | $[16,25]^{\mathsf T}$ | ? |
-| B | $[2/3]$ | $59/3$ | $[21,23]^{\mathsf T}$ | ? |
+| A | $[4,2]^{\mathsf T}$ | 45 | $[77,59,83]^{\mathsf T}$ | 7.33 |
+| B | $[3,3]^{\mathsf T}$ | 45 | $[78,60,81]^{\mathsf T}$ | ? |
 
-Verify the predictions and calculate **both** MSEs. Which candidate wins?
+Verify B’s predictions and calculate its MSE. Which candidate results in a lower MSE?
 
 ::: {.fragment}
-A: $(4+25)/2=14.5$; B: $(9+9)/2=9$. **B has lower MSE.**
+B: $(9+4+25)/3\approx12.67$. **A has lower MSE.**
 :::
 
 ::: {.notes}
-Allow two minutes. X has shape 2 by 1: two examples and one feature. Each coefficient vector is 1 by 1; b is scalar. Candidate A gives residuals 2 and -5; B gives -3 and -3. A is closer for the first example but worse overall under squared error. Ask why we cannot just average signed residuals: +10 and -10 cancel despite large errors. Neither candidate is claimed to be optimal. This is one connected prediction-and-loss activity replacing the two former exercises.
+Allow two minutes. Reuse the same three students and two features as the preceding worked example. X has shape 3 by 2; each coefficient vector has shape 2 by 1; b is scalar. For B, multiply each row by [3,3] transpose and add 45 to obtain 78, 60, and 81. Residuals are -3, 2, and 5, giving squared errors 9, 4, and 25. Their mean is 38/3, about 12.67, versus A's 22/3, about 7.33. B is closer for the second student, but A has lower MSE across all examples. Neither candidate is claimed to be optimal. Fitting compares parameter choices using the aggregate loss, not one student's error alone.
 :::
 
 # Ridge and model complexity
@@ -390,6 +426,8 @@ How can we constrain the fit while keeping the same prediction rule?
 **Changing regularization does not change the number of coefficients.**
 
 **In this course, we'll use `Ridge` for linear regression.**
+
+You will study regularization in more depth in **DSCI 573**.
 
 ::: {.notes}
 Minimizing training error alone can produce coefficients that are sensitive to the particular training sample, especially when features overlap in the information they provide. Ridge adds a cost for large coefficients. It balances fitting the training targets against keeping coefficients smaller. This can reduce overfitting, although it is not guaranteed to improve every dataset. The prediction rule remains a weighted sum. Ridge will be our standard linear regression estimator in this course.
@@ -457,8 +495,11 @@ for alpha in 10.0 ** np.arange(-3, 7):
     alpha_rows.append([alpha, scores["train_score"].mean(), scores["test_score"].mean()])
 alpha_results = pd.DataFrame(alpha_rows, columns=["alpha", "Training", "Cross-validation"])
 fig, ax = plt.subplots(figsize=(8, 3.5))
-for label in ["Training", "Cross-validation"]:
-    ax.semilogx(alpha_results["alpha"], alpha_results[label], marker="o", label=label)
+ax.semilogx(alpha_results["alpha"], alpha_results["Cross-validation"],
+            color="tab:orange", linestyle="-", marker="o", label="Cross-validation")
+ax.semilogx(alpha_results["alpha"], alpha_results["Training"],
+            color="tab:blue", linestyle="--", marker="s", markerfacecolor="none",
+            linewidth=2, label="Training", zorder=3)
 ax.set(xlabel="alpha (stronger regularization →)", ylabel="Mean R²")
 ax.legend()
 fig.tight_layout()
@@ -503,7 +544,7 @@ How does a score become a probability—and what should fitting reward?
 22 minutes: prediction and cities activity about 9; loss and dataset calculation about 10; regularization and checkpoint about 3. No detailed coefficient-interpretation detour.
 :::
 
-## Logistic regression: Decision boundary {.model-plot .smaller}
+## Logistic regression: Decision boundary {.model-plot .boundary-plot .smaller}
 
 **Binary classification:** use longitude and latitude to predict Canada or USA.
 
@@ -519,9 +560,14 @@ logistic_pipe.fit(X_train_c, y_train_c)
 city_scores = logistic_pipe.decision_function(X_train_c)
 city_probs = logistic_pipe.predict_proba(X_train_c)
 city_predictions = logistic_pipe.predict(X_train_c)
-wrong = np.flatnonzero(city_predictions != y_train_c.to_numpy())
-confident_wrong = wrong[np.argmax(city_probs[wrong].max(axis=1))]
-selected_positions = [np.abs(city_scores).argmin(), city_scores.argmin(), confident_wrong]
+canada_positions = np.flatnonzero(y_train_c.to_numpy() == "Canada")
+near_canada = canada_positions[np.abs(city_scores[canada_positions]).argmin()]
+far_canada = canada_positions[city_scores[canada_positions].argmin()]
+wrong_usa = np.flatnonzero(
+    (y_train_c.to_numpy() == "USA") & (city_predictions != y_train_c.to_numpy())
+)
+confident_wrong = wrong_usa[np.argmax(city_probs[wrong_usa].max(axis=1))]
+selected_positions = [near_canada, far_canada, confident_wrong]
 city_examples = X_train_c.iloc[selected_positions].copy()
 city_examples.index = ["A", "B", "C"]
 xx, yy = np.meshgrid(np.linspace(X_train_c.longitude.min()-2, X_train_c.longitude.max()+2, 250),
@@ -531,44 +577,47 @@ grid_scores = logistic_pipe.decision_function(grid).reshape(xx.shape)
 ```
 
 ```{python}
-#| fig-width: 8
-#| fig-height: 3.7
-fig, ax = plt.subplots(figsize=(8, 3.7))
-ax.set_facecolor("#f5f9fc")
-city_colours = {"Canada": "#0077ee", "USA": "#f07800"}
+#| fig-width: 9
+#| fig-height: 4.2
+fig, ax = plt.subplots(figsize=(9, 4.2))
+ax.set_facecolor("white")
+city_colours = {"Canada": "#0057d9", "USA": "#f4511e"}
 for country, marker in zip(logistic_pipe.classes_, ["o", "^"]):
     mask = y_train_c == country
     ax.scatter(X_train_c.loc[mask, "longitude"], X_train_c.loc[mask, "latitude"],
                label=country, marker=marker, color=city_colours[country],
-               alpha=0.9, s=48, edgecolors="white", linewidths=0.55, zorder=3)
+               alpha=1.0, s=100, edgecolors="white", linewidths=0.85, zorder=3)
 # A white halo keeps the boundary visible where it crosses city markers.
-ax.contour(xx, yy, grid_scores, levels=[0], colors="white", linewidths=4.5, zorder=4)
-ax.contour(xx, yy, grid_scores, levels=[0], colors="#202b38", linewidths=2.4, zorder=5)
+ax.contour(xx, yy, grid_scores, levels=[0], colors="white", linewidths=5, zorder=4)
+ax.contour(xx, yy, grid_scores, levels=[0], colors="#202b38", linewidths=2.6, zorder=5)
 label_offsets = {"A": (13, -24), "B": (12, 9), "C": (15, -7)}
 for label, row in city_examples.iterrows():
-    ax.scatter(row.longitude, row.latitude, s=175, facecolors="none",
-               edgecolors="#202b38", linewidths=1.5, zorder=6)
+    ax.scatter(row.longitude, row.latitude, s=250, facecolors="none",
+               edgecolors="#202b38", linewidths=1.8, zorder=6)
     ax.annotate(label, (row.longitude, row.latitude), xytext=label_offsets[label],
-                textcoords="offset points", weight="bold", fontsize=11, color="#202b38",
+                textcoords="offset points", weight="bold", fontsize=12, color="#202b38",
                 bbox=dict(boxstyle="round,pad=0.22", facecolor="white", edgecolor="#cbd5e1"),
                 arrowprops=dict(arrowstyle="-", color="#64748b", linewidth=0.9), zorder=7)
 ax.set(xlabel="Longitude", ylabel="Latitude")
-ax.grid(color="#dce5ed", linewidth=0.7, alpha=0.8, zorder=0)
+ax.xaxis.label.set_size(12)
+ax.yaxis.label.set_size(12)
+ax.grid(color="#e8edf2", linewidth=0.6, zorder=0)
 ax.set_axisbelow(True)
 for spine in ["top", "right"]:
     ax.spines[spine].set_visible(False)
 for spine in ["left", "bottom"]:
     ax.spines[spine].set_color("#b0becb")
 ax.tick_params(colors="#475569", labelsize=10)
-ax.legend(loc="lower left", frameon=True, facecolor="white", edgecolor="#dce5ed", framealpha=0.95)
+ax.legend(loc="lower left", frameon=True, facecolor="white", edgecolor="#dce5ed",
+          framealpha=1, fontsize=12, title="Observed country", title_fontsize=11)
 fig.tight_layout()
 plt.show()
 ```
 
-The linear score is $z=\mathbf w^{\mathsf T}\mathbf x+b$. The black line is where $z=\mathbf w^{\mathsf T}\mathbf x+b=0$: the **fitted boundary**, not the actual national border.
+The black line is the **fitted boundary**: $z=\mathbf w^{\mathsf T}\mathbf x+b=0$. It is not the actual national border.
 
 ::: {.notes}
-The model uses standardized coordinates and a fixed default C. These are training examples used to explain the fitted rule, not an independent evaluation. Point A is nearest the fitted boundary; B has the most negative score; C is the most confident training mistake, selected by comparing predictions with labels. Ask students to compare the marked cities with the fitted line and the class markers. A straight line cannot reproduce the geographic border and disconnected regions such as Alaska.
+The model uses standardized coordinates and a fixed default C. These are training examples used to explain the fitted rule, not an independent evaluation. A is the Canadian training example nearest the fitted boundary; B is the Canadian example with the most negative score; C is the most confident mistake among USA training examples. The selection deliberately includes two observed Canada labels and one USA label. Ask students to compare the marked cities with the fitted line and the class markers. A straight line cannot reproduce the geographic border and disconnected regions such as Alaska.
 :::
 
 ## Cities: From scores to probabilities {.model-plot .smaller}
@@ -599,7 +648,7 @@ $p=P(\mathrm{USA})=\sigma(z)=1/(1+e^{-z})$. Choose the more probable class.
 ::: {.notes}
 decision_function returns z; predict_proba returns probabilities in classes_ order; predict returns a class. The sigmoid is nonlinear, but the boundary is still the linear equation z=0. With d features, a nondegenerate boundary has dimension d-1. Negative scores favour Canada, zero gives equal probabilities, and positive scores favour USA. Despite its name, logistic regression is a classifier.
 
-Use the same fitted cities model and the same marked examples A, B, and C as on the boundary plot. The horizontal axis is a weighted score computed from both standardized coordinates, not longitude or latitude alone. The sigmoid maps that score to the probability of classes_[1], which is USA here. A lies near zero and probability one half. B and C have negative scores and favour Canada, even though C's observed label is USA. The vertical dashed line marks score zero, corresponding to the fitted geographic boundary. Ask students which points favour Canada before advancing. More extreme probabilities do not guarantee correctness.
+Use the same fitted cities model and the same marked examples A, B, and C as on the boundary plot. The horizontal axis is a weighted score computed from both standardized coordinates, not longitude or latitude alone. The sigmoid maps that score to the probability of classes_[1], which is USA here. A is the Canadian example nearest the boundary, with a score near zero and probability near one half. B and C have negative scores and favour Canada, even though C's observed label is USA. The vertical dashed line marks score zero, corresponding to the fitted geographic boundary. Ask students which points favour Canada before advancing. More extreme probabilities do not guarantee correctness.
 :::
 
 ## Your turn: Trace the city predictions {.slide-your-turn .smaller}
@@ -676,7 +725,7 @@ For the preceding **cat**, select $P(\mathrm{cat})$:
 | B | 0.03 | 3.51 | Confidently wrong |
 | C | 0.90 | 0.11 | Confidently correct |
 
-High probability for the true class → small loss. We use the **natural logarithm**.
+High probability for the true class $\to$ small loss. We use the **natural logarithm**.
 
 ::: {.notes}
 Connect the formula to the poll's ranking C < A < B. Only select the probability of the observed class, then take its negative natural log. Probability one for that class gives zero loss; as it approaches zero, loss grows without bound. Unlike accuracy, the loss distinguishes how much probability was assigned to the truth. These three models predict one example; the next dataset calculation instead averages over distinct examples.
@@ -707,19 +756,19 @@ Read the horizontal axis carefully: it is probability of the true class, whether
 
 ## Binary cross-entropy (log loss) {.smaller}
 
-Encode **cat as $y=1$** and **dog as $y=0$**. Let $p=P(y=1\mid\mathbf{x})$.
+Return to cities: encode **Canada as $y=0$** and **USA as $y=1$**. Let $p=P(\mathrm{USA}\mid\mathbf x)$.
 
 $$L=-\left[y\log(p)+(1-y)\log(1-p)\right]$$
 
-- True class is cat ($y=1$): $L=-\log(p)$.
-- True class is dog ($y=0$): $L=-\log(1-p)$.
+- True class is Canada ($y=0$): $L=-\log(1-p)$.
+- True class is USA ($y=1$): $L=-\log(p)$.
 - In both cases, this is **negative log probability of the true class**.
 
 Dataset log loss is the **average** loss across examples.
 Logistic regression minimizes training log loss plus a regularization penalty.
 
 ::: {.notes}
-Here is the usual binary formula. We encode cat as one and dog as zero, and p is the probability of cat. If the true class is cat, y equals one and only negative log p remains. If the true class is dog, y equals zero and only negative log of one minus p remains. Both cases select the probability of the true class. We average these losses across examples, and logistic regression fits the training data using log loss together with a regularization penalty.
+Return from the cat poll to our cities model. Encode Canada as zero and USA as one, matching classes_ = [Canada, USA]. p is the probability of USA. If Canada is observed, y is zero and the loss uses negative log of 1-p, the probability of Canada. If USA is observed, y is one and the loss uses negative log p. Both cases select the probability of the true class. We average these losses across examples, and logistic regression fits the training data using log loss together with a regularization penalty.
 
 For endpoint probabilities, interpret the formula by limits: probability 1 on the true class gives zero loss; probability 0 on the true class gives infinite loss. The unused term contributes zero.
 :::
@@ -733,7 +782,7 @@ For endpoint probabilities, interpret the formula by limits: probability 1 on th
 | Example | True class | $P(\mathrm{USA})$ | $p_{\text{True class}}$ | Loss |
 |---|---|---:|---:|---:|
 | 1 | Canada | 0.20 | 0.80 | 0.223 |
-| 2 | USA | 0.70 | 0.70 | 0.357 |
+| 2 | Canada | 0.30 | 0.70 | 0.357 |
 | 3 | USA | 0.10 | 0.10 | 2.303 |
 
 $$\text{Mean log loss}=\frac{0.223+0.357+2.303}{3}\approx0.961$$
@@ -742,7 +791,7 @@ $$\mathcal L=\frac1n\sum_{i=1}^n L_i
 =-\frac1n\sum_{i=1}^n[y_i\log p_i+(1-y_i)\log(1-p_i)]$$
 
 ::: {.notes}
-Cover the last two columns verbally first: ask students which probability to use in each row before explaining the losses. Encode Canada as zero and USA as one. Row one uses 1-p=0.8; the other rows use p. The confident mistake dominates the total. Calculations are rounded; the mean using unrounded logarithms is approximately 0.9608. This is loss across three different examples, unlike the preceding three models for a single cat. Logistic fitting minimizes mean training log loss plus a coefficient penalty. As with MSE, low training loss does not establish generalization.
+Cover the last two columns verbally first: ask students which probability to use in each row before explaining the losses. Encode Canada as zero and USA as one. The first two examples are Canada: row one uses 1-p=0.8 and row two uses 1-p=0.7. The third is USA and uses p=0.1. Thus two examples require taking the complement of P(USA). The confident mistake dominates the total. Calculations are rounded; the mean using unrounded logarithms is approximately 0.9608. This is loss across three different examples, unlike the preceding three models for a single cat. Logistic fitting minimizes mean training log loss plus a coefficient penalty. As with MSE, low training loss does not establish generalization.
 :::
 
 ## Regularization: `alpha` vs. `C` {.smaller}
@@ -848,7 +897,7 @@ Give pairs a minute. Check the learned vocabulary and target classes. The fixed-
 1. **Notation:** $X$ has examples as rows; transpose exchanges rows and columns.
 2. **Linear regression:** $\hat{\mathbf y}=X\mathbf w+b$; MSE averages squared residuals.
 3. **Ridge:** penalize large coefficients; larger `alpha` means stronger regularization.
-4. **Logistic regression:** score → sigmoid probability → class; fit with mean log loss and a penalty. Smaller `C` means stronger regularization.
+4. **Logistic regression:** score $\to$ sigmoid probability $\to$ class; fit with mean log loss and a penalty. Smaller `C` means stronger regularization.
 5. **Model families:** linear-model parameter count stays fixed for fixed features and classes; $k$-NN retains training examples.
 
 ::: {.notes}
@@ -865,6 +914,7 @@ Closing: 2 minutes total with the next slide. Return to the five-topic roadmap. 
 ::: {.notes}
 Today established how weighted sums, losses, and regularization work for regression and binary classification. Next lecture extends these ideas to multiple classes, compares losses, and connects interpretation to the full workflow. We will use sentiment and mixed-feature housing examples, then revisit the course as a whole.
 :::
+
 ## Your turn: Is a log loss of 0.69 good? {visibility="hidden" .slide-your-turn}
 
 A binary classifier has a mean training log loss of 0.69. Has it learned much?
