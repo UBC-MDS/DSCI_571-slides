@@ -10,7 +10,7 @@ editor: { render-on-save: true }
 
 [Download slides as PDF](slides/slides-07-linear-models-loss-functions.pdf){.btn .btn-outline-primary .pdf-download download=""}
 
-{{< revealjs "slides/slides-07-linear-models.html" height="600px" class="ratio ratio-16x9" >}}
+{{< revealjs "slides/slides-07-linear-models-loss-functions.html" height="600px" class="ratio ratio-16x9" >}}
 
 ## Course notes
 
