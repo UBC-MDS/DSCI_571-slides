@@ -1,5 +1,5 @@
 ---
-publish-pdf: false
+publish-pdf: true
 title: "Lecture 7: Linear Models and Loss Functions"
 description: "Linear models"
 description-short: "Notation and matrix shapes; Linear regression and MSE; Ridge, scaling, and alpha; Logistic regression and binary cross-entropy; Parametric and non-parametric models"

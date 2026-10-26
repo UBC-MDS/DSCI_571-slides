@@ -680,19 +680,31 @@ display(HTML(city_table.to_html(float_format=lambda value: f"{value:.3f}")))
 Ask for predictions before revealing the table. A has a score near zero and probabilities near one half. C demonstrates that a large probability need not mean a correct prediction. Distance here means perpendicular distance in standardized feature space to the fitted line, not kilometres to the real national border. These selected training examples explain the model; the table is not a validation result.
 :::
 
+## Loss for logistic regression
+
+We can now predict probabilities. How should `fit` choose the coefficients?
+
+**Could we use mean squared error?**
+
+What should a loss reward when the model predicts a probability rather than a numeric target?
+
+::: {.notes}
+Keep this transition brief within the existing 22-minute logistic-regression allocation. Invite initial thoughts, then use the next poll to explore desirable loss behaviour before introducing log loss. Do not suggest that squared error is invalid for probabilities: for a binary label y and probability p, (y-p)^2 is a valid probability loss, commonly called the binary Brier score. Logistic regression conventionally fits using binary cross-entropy plus regularization. Squared error on unrestricted linear scores is a different proposal: those scores can fall outside [0,1] and are not probabilities. We are motivating the loss used by this estimator, not proving that classification admits only one loss. Detailed loss comparisons belong to lecture 8.
+:::
+
 ## iClicker: Ranking prediction penalties {.slide-your-turn .smaller}
 
-We want to classify an image as **cat or dog**. The true class is **cat**.
+Vancouver is in **Canada**. Three hypothetical models predict its country.
+
+**Illustrative probabilities**, not outputs from our fitted cities model.
 
 :::: {.columns}
 ::: {.column width="35%"}
-![True class: cat](img/main-coon-cat.png){width=100%}
-
-<center><small>Image created by GPT-6.1 Sol Light</small></center>
+![Regional map showing Vancouver in British Columbia, Canada, north of the border with Washington, USA.](img/vancouver-canada-usa-map.png){width=100%}
 :::
 ::: {.column width="65%"}
 
-| Model | $P(\text{cat})$ | $P(\text{dog})$ |
+| Model | $P(\text{Canada})$ | $P(\text{USA})$ |
 |---|---:|---:|
 | A | 0.50 | 0.50 |
 | B | 0.03 | 0.97 |
@@ -708,7 +720,7 @@ Which ranking is **most appropriate** for the penalties these models should rece
 :::
 ::::
 ::: {.notes}
-We used cities to connect scores, probabilities, and predictions. Now ask what fitting should reward. This poll uses a simple image example so we can focus on the probability of the true class. This image is a cat, and three models give different cat-versus-dog probabilities. Before seeing a formula, choose the most appropriate penalty ranking, from smallest to largest. [Pause for voting.] The answer is option B. Model C puts high probability on the true class, A is uncertain, and model B is confidently wrong. Why should B receive a larger penalty than A? We want the loss to capture that distinction.
+We used cities to connect scores, probabilities, and predictions. Now ask what fitting should reward. This poll keeps Vancouver as a concrete city whose observed country is Canada. Three hypothetical models assign different Canada-versus-USA probabilities. The map is context; the model inputs remain coordinates, not map pixels. Map data: Natural Earth, https://www.naturalearthdata.com/about/terms-of-use/ (public domain); country geometries from https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_50m_admin_0_countries.geojson. Vancouver is marked at approximately 49.2827 N, 123.1207 W. Before seeing a formula, choose the most appropriate penalty ranking, from smallest to largest. [Pause for voting.] The answer is option B. Model C puts high probability on the true class, A is uncertain, and model B is confidently wrong. Why should B receive a larger penalty than A? We want the loss to capture that distinction.
 
 Correct answer: B. C < A < B. A is uncertain; B is confidently wrong; C is confidently correct. A's probabilities are tied, so avoid assigning it a predicted label. After voting, ask students why model B should receive a larger penalty than model A. Option D invites discussion of whether confidence should affect the penalty. Ask students to propose what a loss should reward before introducing the formula.
 :::
@@ -717,7 +729,7 @@ Correct answer: B. C < A < B. A is uncertain; B is confidently wrong; C is confi
 
 $$L=-\log(p_{\text{True class}})$$
 
-For the preceding **cat**, select $P(\mathrm{cat})$:
+For **Vancouver**, the true class is Canada: select $P(\mathrm{Canada})$.
 
 | Model | $p_{\text{True class}}$ | Log loss | Interpretation |
 |---|---:|---:|---|
@@ -744,19 +756,19 @@ case_losses = -np.log(case_probabilities)
 ax.scatter(case_probabilities, case_losses, color="tab:purple", zorder=3)
 for label, probability, loss in zip(["A: uncertain", "B: confidently wrong", "C: confidently correct"], case_probabilities, case_losses):
     ax.annotate(label, (probability, loss), xytext=(8 if probability < 0.8 else -8, 12), textcoords="offset points", ha="left" if probability < 0.8 else "right")
-ax.set(xlabel="Probability assigned to the true class", ylabel="Log loss for one example", xlim=(0, 1))
+ax.set(xlabel="Probability assigned to Canada (Vancouver’s true class)", ylabel="Log loss for one example", xlim=(0, 1))
 plt.show()
 ```
 
 Increasing the probability assigned to the true class reduces the loss.
 
 ::: {.notes}
-Read the horizontal axis carefully: it is probability of the true class, whether that class is cat or dog. The vertical axis is the loss for that example. Moving right reduces loss; near zero the curve rises sharply. Our three models sit on this same curve. Notice that there is no special break at one half. Log loss changes continuously with the probability, even when the predicted label stays the same.
+Read the horizontal axis carefully: it is probability of the true class, whether that class is Canada or USA. The vertical axis is the loss for that example. Moving right reduces loss; near zero the curve rises sharply. Our three models sit on this same curve. Notice that there is no special break at one half. Log loss changes continuously with the probability, even when the predicted label stays the same.
 :::
 
 ## Binary cross-entropy (log loss) {.smaller}
 
-Return to cities: encode **Canada as $y=0$** and **USA as $y=1$**. Let $p=P(\mathrm{USA}\mid\mathbf x)$.
+Encode **Canada as $y=0$** and **USA as $y=1$**. Let $p=P(\mathrm{USA}\mid\mathbf x)$.
 
 $$L=-\left[y\log(p)+(1-y)\log(1-p)\right]$$
 
@@ -768,7 +780,7 @@ Dataset log loss is the **average** loss across examples.
 Logistic regression minimizes training log loss plus a regularization penalty.
 
 ::: {.notes}
-Return from the cat poll to our cities model. Encode Canada as zero and USA as one, matching classes_ = [Canada, USA]. p is the probability of USA. If Canada is observed, y is zero and the loss uses negative log of 1-p, the probability of Canada. If USA is observed, y is one and the loss uses negative log p. Both cases select the probability of the true class. We average these losses across examples, and logistic regression fits the training data using log loss together with a regularization penalty.
+Continue the Vancouver example with our cities model’s class encoding. Encode Canada as zero and USA as one, matching classes_ = [Canada, USA]. p is the probability of USA. If Canada is observed, y is zero and the loss uses negative log of 1-p, the probability of Canada. If USA is observed, y is one and the loss uses negative log p. Both cases select the probability of the true class. We average these losses across examples, and logistic regression fits the training data using log loss together with a regularization penalty.
 
 For endpoint probabilities, interpret the formula by limits: probability 1 on the true class gives zero loss; probability 0 on the true class gives infinite loss. The unused term contributes zero.
 :::
@@ -791,7 +803,7 @@ $$\mathcal L=\frac1n\sum_{i=1}^n L_i
 =-\frac1n\sum_{i=1}^n[y_i\log p_i+(1-y_i)\log(1-p_i)]$$
 
 ::: {.notes}
-Cover the last two columns verbally first: ask students which probability to use in each row before explaining the losses. Encode Canada as zero and USA as one. The first two examples are Canada: row one uses 1-p=0.8 and row two uses 1-p=0.7. The third is USA and uses p=0.1. Thus two examples require taking the complement of P(USA). The confident mistake dominates the total. Calculations are rounded; the mean using unrounded logarithms is approximately 0.9608. This is loss across three different examples, unlike the preceding three models for a single cat. Logistic fitting minimizes mean training log loss plus a coefficient penalty. As with MSE, low training loss does not establish generalization.
+Cover the last two columns verbally first: ask students which probability to use in each row before explaining the losses. Encode Canada as zero and USA as one. The first two examples are Canada: row one uses 1-p=0.8 and row two uses 1-p=0.7. The third is USA and uses p=0.1. Thus two examples require taking the complement of P(USA). The confident mistake dominates the total. Calculations are rounded; the mean using unrounded logarithms is approximately 0.9608. This is loss across three different examples, unlike the preceding three hypothetical models for Vancouver. Logistic fitting minimizes mean training log loss plus a coefficient penalty. As with MSE, low training loss does not establish generalization.
 :::
 
 ## Regularization: `alpha` vs. `C` {.smaller}
