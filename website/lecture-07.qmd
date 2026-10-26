@@ -8,7 +8,7 @@ editor: { render-on-save: true }
 
 ## Slides
 
-[Download slides as PDF](slides/slides-07-linear-models.pdf){.btn .btn-outline-primary .pdf-download download=""}
+[Download slides as PDF](slides/slides-07-linear-models-loss-functions.pdf){.btn .btn-outline-primary .pdf-download download=""}
 
 {{< revealjs "slides/slides-07-linear-models.html" height="600px" class="ratio ratio-16x9" >}}
 
