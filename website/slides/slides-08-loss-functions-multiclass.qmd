@@ -1,9 +1,9 @@
 ---
-title: "Lecture 8: Multiclass Classification, More Loss Functions, Conclusions"
+title: "Lecture 8: Loss Functions, Model Interpretation, Multiclass Classification"
 author: "Varada Kolhatkar"
 jupyter: python3
-description: "Multiclass classification, loss functions, model interpretation, and course conclusions"
-description-short: "Softmax and cross-entropy; MAE and MSE; classification losses; fitting and evaluation; coefficient interpretation; course workflow"
+description: "Loss functions, model interpretation, multiclass classification, and course conclusions"
+description-short: "MAE and MSE; classification losses; fitting and evaluation; coefficient interpretation; softmax and cross-entropy; course workflow"
 format:
   revealjs:
     html-math-method: mathjax
@@ -61,15 +61,216 @@ Add current announcements before teaching.
 
 ## Today’s roadmap {.slide-goals .smaller}
 
-1. Multiclass classification, softmax, and cross-entropy
-2. Regression losses: MAE versus MSE
-3. Classification losses: log, hinge, and exponential
-4. Accuracy versus loss: fitting and evaluation
-5. Coefficient interpretation: class demo
-6. Course conclusions and what comes next
+1. **More loss functions:** regression, classification, fitting versus evaluation
+2. **Model interpretation:** coefficients and feature contributions
+3. **Multiclass classification:** class scores, softmax, and cross-entropy
+4. **Conclusions:** overall workflow, ML course map, and what comes next
 
 ::: {.notes}
-Suggested 80-minute pacing: opening 3, multiclass and cross-entropy 19, regression losses 8, classification losses 10, break 5, fitting versus evaluation 8, interpretation demo 15, conclusions 12. Answers to activities are in speaker notes. Chapter 8 is the content source throughout.
+Suggested 80-minute pacing: opening 3, regression losses 8, classification losses 10, fitting versus evaluation 8, course evaluations 10, interpretation demo 12, multiclass and cross-entropy 19, conclusions 10. Answers to activities are in speaker notes. Chapter 8 is the content source throughout.
+:::
+
+# More loss functions
+
+How does the choice of loss change what fitting rewards?
+
+# Regression losses
+
+How strongly should a large error count?
+
+## Your turn: Delivery-time predictions {.slide-your-turn .smaller}
+
+Residual $r_i=y_i-\hat y_i$, in minutes.
+
+| Model | Residuals on four validation deliveries |
+|---|---|
+| A | 0, 0, 0, 8 |
+| B | 3, 3, 3, 3 |
+
+$$\operatorname{MAE}=\frac1n\sum_i|r_i|,
+\qquad \operatorname{MSE}=\frac1n\sum_i r_i^2$$
+
+1. Calculate MAE and MSE for both models.
+2. Which model does each metric favour?
+
+::: {.notes}
+Allow two minutes, then reveal the next slide. Ask students to think about whether one substantial delivery error matters more than several small ones before calculating.
+:::
+
+## MAE and MSE can rank models differently {.smaller}
+
+| Model | MAE (minutes) | MSE (minutes squared) |
+|---|---:|---:|
+| A: 0, 0, 0, 8 | **2** | 16 |
+| B: 3, 3, 3, 3 | 3 | **9** |
+
+- **MAE favours A:** every additional minute counts equally.
+- **MSE favours B:** the 8-minute error contributes $8^2=64$.
+- Doubling a residual doubles absolute loss and quadruples squared loss.
+
+::: {.notes}
+MAE A=(0+0+0+8)/4=2, B=12/4=3. MSE A=64/4=16, B=36/4=9. Do not compare the numerical size of MAE with MSE, because units differ. Both losses are symmetric: an error of minus eight has the same penalty as plus eight. Neither captures different costs for early versus late predictions.
+:::
+
+## Absolute and squared loss {.model-plot .smaller}
+
+```{python}
+r = np.linspace(-4, 4, 400)
+fig, ax = plt.subplots()
+ax.plot(r, r**2, label="Squared loss", color="#419599", linewidth=3)
+ax.plot(r, np.abs(r), label="Absolute loss", color="#b66837", linewidth=3)
+ax.set(xlabel="Residual: observed − predicted", ylabel="Loss (units differ)")
+ax.legend()
+fig.tight_layout()
+plt.show()
+```
+
+Squared loss gives large errors relatively more influence.
+
+::: {.notes}
+These are per-example loss curves, whose averages give MSE and MAE. Focus on growth rates rather than comparing curve heights across units. Squared loss is more sensitive to unusual target values. Absolute loss still gives unusual observations influence.
+:::
+
+# Classification losses
+
+The same score form can lead to different fitted coefficients
+
+## Binary classification scores {.smaller}
+
+$$z=\mathbf w^{\mathsf T}\mathbf x+b$$
+
+| Model | Score and prediction | Fitting loss |
+|---|---|---|
+| Logistic regression | Sigmoid converts $z$ into $P(y=1)$ | Log loss |
+| SVM with a linear kernel | Sign of $z$ chooses the class | Hinge loss |
+
+- The decision boundary is $z=0$.
+- An SVM score is not automatically a probability.
+- Different losses can produce different coefficients.
+
+::: {.notes}
+Connect to the RBF SVM from lecture 3, then introduce a linear kernel as another option. A linear score is shared mathematical structure, but it does not imply the same fitted model. Some SVM implementations use squared hinge rather than hinge loss. Regularization also affects fitting.
+:::
+
+## One review, three loss functions {.smaller}
+
+Fix a review whose **true sentiment is positive**.
+Positive scores favour positive sentiment.
+
+| Loss | Formula for this positive review | Behaviour |
+|---|---|---|
+| Logistic | $\log(1+e^{-z})$ | Smoothly decreases |
+| Hinge | $\max(0,1-z)$ | Zero when $z\geq1$ |
+| Exponential | $e^{-z}$ | Grows rapidly for wrong scores |
+
+Which curve will flatten to zero? Which grows fastest for very negative scores?
+
+::: {.notes}
+For this positive example, logistic loss is -log(sigmoid(z)), which simplifies to log(1+exp(-z)). These formulas assume a positive true class. For a negative example, reflect the curves horizontally. Exponential loss connects to AdaBoost and ensembles in DSCI 573. Keep the algorithm itself out of scope.
+:::
+
+## Comparing classification losses {.model-plot .smaller}
+
+```{python}
+z = np.linspace(-2, 4, 400)
+fig, ax = plt.subplots()
+ax.plot(z, np.logaddexp(0, -z), label="Logistic", linewidth=3, color="#419599")
+ax.plot(z, np.maximum(0, 1-z), "--", label="Hinge", linewidth=3, color="#b66837")
+ax.plot(z, np.exp(-z), ":", label="Exponential", linewidth=3, color="#6b5792")
+ax.axvline(0, color="gray", linewidth=1)
+ax.axvline(1, color="gray", linewidth=1, linestyle=":")
+ax.set(xlabel="Score z (true class is positive)", ylabel="Per-example loss")
+ax.legend()
+fig.tight_layout()
+plt.show()
+```
+
+Hinge loss reaches zero at $z=1$. Exponential loss penalizes strongly wrong scores most sharply.
+
+::: {.notes}
+The vertical lines mark the decision boundary and the hinge margin. At a positive score below one the prediction is correct but hinge loss remains positive. Log and exponential losses approach zero without reaching it at finite scores. Numerical values across these losses are not a common performance scale.
+:::
+
+## iClicker: Correct prediction, positive loss? {.slide-your-turn .smaller}
+
+A truly positive review receives score $z=0.5$.
+
+Which statements are true? Select all that apply.
+
+- **A.** Its predicted class is positive.
+- **B.** Its hinge loss is zero.
+- **C.** Its hinge loss is 0.5.
+- **D.** Its logistic loss is positive.
+
+::: {.notes}
+Answers A, C, D. Hinge is max(0,1-0.5)=0.5. Logistic is log(1+exp(-0.5)), about 0.474. Prediction correctness alone does not establish that the model has achieved a large margin or low probability loss. For a negative true review, a positive score would be wrong.
+:::
+
+# Accuracy versus loss
+
+Fitting a model and evaluating its predictions
+
+## Accuracy can stay fixed while log loss improves {.smaller}
+
+For a **truly positive review**, compare two predictions:
+
+| $P$(positive) | Predicted class | Correct? | Log loss |
+|---:|---|---|---:|
+| 0.20 | Negative | No | 1.609 |
+| 0.30 | Negative | No | 1.204 |
+
+- Both predictions have the same accuracy on this review.
+- Increasing the true-class probability reduces log loss.
+- Smooth changes in log loss guide logistic-regression fitting.
+
+::: {.notes}
+This binary example builds on chapter 7 without requiring multiclass probabilities. Use the usual 0.5 threshold. Losses are -log(0.2) and -log(0.3). Accuracy has flat regions and jumps as coefficients change. We return to this distinction for penguin species later.
+:::
+
+## Fitting objective and evaluation measure {.smaller}
+
+| Stage | Data | Purpose |
+|---|---|---|
+| Fit each candidate | Training portion of each fold | Learn coefficients using the estimator’s loss and regularization |
+| Compare candidates | Validation portion of each fold | Rank candidates using the chosen scorer |
+| Final evaluation | Reserved test set | Assess the selected workflow |
+
+**A loss can also be an evaluation measure:** log loss can assess validation probabilities.
+
+::: {.notes}
+Accuracy has flat regions and jumps as coefficients change. Log loss responds smoothly to changes in true-class probability, even when the predicted class stays fixed. Logistic regression therefore fits with log loss even when we choose hyperparameters by accuracy. Specify the development scorer before final test evaluation.
+:::
+
+## Your turn: What changed inside the search? {.slide-your-turn .smaller}
+
+| `C` | Mean validation accuracy | Mean validation log loss |
+|---:|---:|---:|
+| 0.1 | 0.96 | 0.12 |
+| 10 | 0.97 | 0.18 |
+
+1. Which `C` wins with `scoring="accuracy"`?
+2. Which wins with `scoring="neg_log_loss"`?
+3. Does the scorer change how each candidate learns its coefficients?
+
+::: {.notes}
+Illustrative binary sentiment results from chapter exercise 8.1. Accuracy selects C=10. Negative log loss selects C=0.1 because -0.12 is greater than -0.18. Each candidate still fits logistic loss plus its regularization penalty. If the application needs probabilities, the log-loss result supports C=0.1 despite slightly lower accuracy. The scorer can change candidate ranking and selected C.
+:::
+
+## Course evaluations (~10 minutes)
+
+- The online course evaluations are up, it'll be great if you can fill them in when you get a chance. 
+
+
+# Model interpretation
+
+How do coefficients and feature values combine in a prediction?
+
+## Interpretation of coefficients
+
+[Class demo]()
+
+::: {.notes}
+Continue the binary sentiment example from the loss comparison: inspect coefficients, then reconstruct an individual score using count times coefficient plus intercept. Use the chapter's sentiment and housing demonstrations. Check class order, feature units after preprocessing, and what other features are held fixed. Coefficients explain the fitted calculation rather than causal effects. Next, extend the binary score-and-probability calculation to several classes.
 :::
 
 # Multiclass classification
@@ -272,147 +473,6 @@ pd.DataFrame(penguin_results).set_index("Model").round(3)
 Five-fold CV on the training split. Negate sklearn's neg_log_loss output to report ordinary positive loss, where lower is better. These are validation estimates, not test results. The test set remains untouched.
 :::
 
-# Regression losses
-
-How strongly should a large error count?
-
-## Your turn: Delivery-time predictions {.slide-your-turn .smaller}
-
-Residual $r_i=y_i-\hat y_i$, in minutes.
-
-| Model | Residuals on four validation deliveries |
-|---|---|
-| A | 0, 0, 0, 8 |
-| B | 3, 3, 3, 3 |
-
-$$\operatorname{MAE}=\frac1n\sum_i|r_i|,
-\qquad \operatorname{MSE}=\frac1n\sum_i r_i^2$$
-
-1. Calculate MAE and MSE for both models.
-2. Which model does each metric favour?
-
-::: {.notes}
-Allow two minutes, then reveal the next slide. Ask students to think about whether one substantial delivery error matters more than several small ones before calculating.
-:::
-
-## MAE and MSE can rank models differently {.smaller}
-
-| Model | MAE (minutes) | MSE (minutes squared) |
-|---|---:|---:|
-| A: 0, 0, 0, 8 | **2** | 16 |
-| B: 3, 3, 3, 3 | 3 | **9** |
-
-- **MAE favours A:** every additional minute counts equally.
-- **MSE favours B:** the 8-minute error contributes $8^2=64$.
-- Doubling a residual doubles absolute loss and quadruples squared loss.
-
-::: {.notes}
-MAE A=(0+0+0+8)/4=2, B=12/4=3. MSE A=64/4=16, B=36/4=9. Do not compare the numerical size of MAE with MSE, because units differ. Both losses are symmetric: an error of minus eight has the same penalty as plus eight. Neither captures different costs for early versus late predictions.
-:::
-
-## Absolute and squared loss {.model-plot .smaller}
-
-```{python}
-r = np.linspace(-4, 4, 400)
-fig, ax = plt.subplots()
-ax.plot(r, r**2, label="Squared loss", color="#419599", linewidth=3)
-ax.plot(r, np.abs(r), label="Absolute loss", color="#b66837", linewidth=3)
-ax.set(xlabel="Residual: observed − predicted", ylabel="Loss (units differ)")
-ax.legend()
-fig.tight_layout()
-plt.show()
-```
-
-Squared loss gives large errors relatively more influence.
-
-::: {.notes}
-These are per-example loss curves, whose averages give MSE and MAE. Focus on growth rates rather than comparing curve heights across units. Squared loss is more sensitive to unusual target values. Absolute loss still gives unusual observations influence.
-:::
-
-# Classification losses
-
-The same score form can lead to different fitted coefficients
-
-## Binary classification scores {.smaller}
-
-$$z=\mathbf w^{\mathsf T}\mathbf x+b$$
-
-| Model | Score and prediction | Fitting loss |
-|---|---|---|
-| Logistic regression | Sigmoid converts $z$ into $P(y=1)$ | Log loss |
-| SVM with a linear kernel | Sign of $z$ chooses the class | Hinge loss |
-
-- The decision boundary is $z=0$.
-- An SVM score is not automatically a probability.
-- Different losses can produce different coefficients.
-
-::: {.notes}
-Connect to the RBF SVM from lecture 3, then introduce a linear kernel as another option. A linear score is shared mathematical structure, but it does not imply the same fitted model. Some SVM implementations use squared hinge rather than hinge loss. Regularization also affects fitting.
-:::
-
-## One review, three loss functions {.smaller}
-
-Fix a review whose **true sentiment is positive**.
-Positive scores favour positive sentiment.
-
-| Loss | Formula for this positive review | Behaviour |
-|---|---|---|
-| Logistic | $\log(1+e^{-z})$ | Smoothly decreases |
-| Hinge | $\max(0,1-z)$ | Zero when $z\geq1$ |
-| Exponential | $e^{-z}$ | Grows rapidly for wrong scores |
-
-Which curve will flatten to zero? Which grows fastest for very negative scores?
-
-::: {.notes}
-For this positive example, logistic loss is -log(sigmoid(z)), which simplifies to log(1+exp(-z)). These formulas assume a positive true class. For a negative example, reflect the curves horizontally. Exponential loss connects to AdaBoost and ensembles in DSCI 573. Keep the algorithm itself out of scope.
-:::
-
-## Comparing classification losses {.model-plot .smaller}
-
-```{python}
-z = np.linspace(-2, 4, 400)
-fig, ax = plt.subplots()
-ax.plot(z, np.logaddexp(0, -z), label="Logistic", linewidth=3, color="#419599")
-ax.plot(z, np.maximum(0, 1-z), "--", label="Hinge", linewidth=3, color="#b66837")
-ax.plot(z, np.exp(-z), ":", label="Exponential", linewidth=3, color="#6b5792")
-ax.axvline(0, color="gray", linewidth=1)
-ax.axvline(1, color="gray", linewidth=1, linestyle=":")
-ax.set(xlabel="Score z (true class is positive)", ylabel="Per-example loss")
-ax.legend()
-fig.tight_layout()
-plt.show()
-```
-
-Hinge loss reaches zero at $z=1$. Exponential loss penalizes strongly wrong scores most sharply.
-
-::: {.notes}
-The vertical lines mark the decision boundary and the hinge margin. At a positive score below one the prediction is correct but hinge loss remains positive. Log and exponential losses approach zero without reaching it at finite scores. Numerical values across these losses are not a common performance scale.
-:::
-
-## iClicker: Correct prediction, positive loss? {.slide-your-turn .smaller}
-
-A truly positive review receives score $z=0.5$.
-
-Which statements are true? Select all that apply.
-
-- **A.** Its predicted class is positive.
-- **B.** Its hinge loss is zero.
-- **C.** Its hinge loss is 0.5.
-- **D.** Its logistic loss is positive.
-
-::: {.notes}
-Answers A, C, D. Hinge is max(0,1-0.5)=0.5. Logistic is log(1+exp(-0.5)), about 0.474. Prediction correctness alone does not establish that the model has achieved a large margin or low probability loss. For a negative true review, a positive score would be wrong.
-:::
-
-## Course evaluations (~10 minutes)
-
-- The online course evaluations are up, it'll be great if you can fill them in when you get a chance. 
-
-
-# Accuracy versus loss
-
-Fitting a model and evaluating its predictions
-
 ## Same class prediction, different probabilities {.slide-your-turn .smaller}
 
 | Model | $P$(Adelie) | $P$(Chinstrap) | $P$(Gentoo) |
@@ -428,39 +488,6 @@ Fitting a model and evaluating its predictions
 ::: {.notes}
 Both predict Adelie. If Adelie is true, B has lower loss: 0.105 versus 0.916. If Chinstrap is true, A has lower loss: 1.050 versus 2.996. Accuracy counts both correct in the first case and both incorrect in the second. More extreme probabilities help only when they favour the observed outcome.
 :::
-
-## Fitting objective and evaluation measure {.smaller}
-
-| Stage | Data | Purpose |
-|---|---|---|
-| Fit each candidate | Training portion of each fold | Learn coefficients using the estimator’s loss and regularization |
-| Compare candidates | Validation portion of each fold | Rank candidates using the chosen scorer |
-| Final evaluation | Reserved test set | Assess the selected workflow |
-
-**A loss can also be an evaluation measure:** log loss can assess validation probabilities.
-
-::: {.notes}
-Accuracy has flat regions and jumps as coefficients change. Log loss responds smoothly to changes in true-class probability, even when the predicted class stays fixed. Logistic regression therefore fits with log loss even when we choose hyperparameters by accuracy. Specify the development scorer before final test evaluation.
-:::
-
-## Your turn: What changed inside the search? {.slide-your-turn .smaller}
-
-| `C` | Mean validation accuracy | Mean validation log loss |
-|---:|---:|---:|
-| 0.1 | 0.96 | 0.12 |
-| 10 | 0.97 | 0.18 |
-
-1. Which `C` wins with `scoring="accuracy"`?
-2. Which wins with `scoring="neg_log_loss"`?
-3. Does the scorer change how each candidate learns its coefficients?
-
-::: {.notes}
-Illustrative results from chapter exercise 8.3, not the penguin CV output. Accuracy selects C=10. Negative log loss selects C=0.1 because -0.12 is greater than -0.18. Each candidate still fits logistic loss plus its regularization penalty. If the application needs probabilities, the log-loss result supports C=0.1 despite slightly lower accuracy. The scorer can change candidate ranking and selected C.
-:::
-
-## Interpretation of coefficients
-
-[Class demo]()
 
 # Course conclusions
 

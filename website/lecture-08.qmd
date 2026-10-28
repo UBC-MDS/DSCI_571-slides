@@ -1,8 +1,8 @@
 ---
 publish-pdf: true
-title: "Lecture 8: Multiclass Classification, Loss Functions and Conclusions"
-description: "Multiclass classification, loss functions, interpretation, and course conclusions"
-description-short: "Softmax and cross-entropy; MAE and MSE; classification losses; fitting versus evaluation; coefficient interpretation; course conclusions"
+title: "Lecture 8: Loss Functions, Model Interpretation, Multiclass Classification, and Conclusions"
+description: "Loss functions, model interpretation, multiclass classification, and course conclusions"
+description-short: "MAE and MSE; classification losses; fitting versus evaluation; coefficient interpretation; softmax and cross-entropy; course conclusions"
 editor: { render-on-save: true }
 ---
 
@@ -18,11 +18,10 @@ editor: { render-on-save: true }
 
 ## Outline
 
-
-- Multiclass classification and softmax
-- Cross-entropy loss
-- Regression losses: MAE and MSE
-- Classification losses: log, hinge, and exponential
-- Accuracy versus loss: fitting and evaluation
-- Interpretation of coefficients: class demo
-- Overall workflow, ML course map, and what comes next
+- More loss functions for regression and classification
+  - MAE versus MSE
+  - Log, hinge, and exponential loss
+  - Fitting loss versus evaluation score
+- Model interpretation: coefficients and feature contributions
+- Multiclass classification: softmax and cross-entropy
+- Conclusions: overall workflow, ML course map, and what comes next
