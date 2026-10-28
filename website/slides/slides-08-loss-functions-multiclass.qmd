@@ -59,6 +59,22 @@ Take a moment to settle in. Put your feet on the floor, relax your shoulders, an
 Add current announcements before teaching.
 :::
 
+## iClicker: Lecture 7 recap {.slide-your-turn .smaller}
+
+Let $z=\mathbf w^{\mathsf T}\mathbf x+b$ and $p=\sigma(z)=1/(1+e^{-z})=P(y=1\mid\mathbf x)$.
+
+**Which statements are true? Select all that apply.**
+
+- **A.** If $z=0$, then $p=0.5$; increasing $z$ increases $p$.
+- **B.** The sigmoid converts the score directly into a class label.
+- **C.** For a true label $y=1$, increasing $p$ from $0.6$ to $0.9$ reduces log loss.
+- **D.** A correct class prediction always has zero log loss.
+- **E.** Mean squared error gives larger errors disproportionately more weight than smaller errors.
+
+::: {.notes}
+Answers: A, C, and E. Allow about two minutes, then discuss each statement. A: sigmoid(0)=0.5 and sigmoid is increasing. B: sigmoid gives a probability; a separate threshold turns it into a class label. C: when y=1, loss is -log(p), so it falls from about 0.511 to 0.105. D: a correct prediction can still have positive log loss; for example, p=0.9 gives about 0.105 when y=1. E: MSE squares each residual before averaging, so doubling the size of an error quadruples its contribution. For example, residuals of 4 and 2 contribute squared errors of 16 and 4. This is why large errors have disproportionately more influence on MSE. Connect A to the raw scores used in today's hinge-versus-logistic comparison, C and D to how log loss rewards true-class probability, and E to today's comparison of MSE and MAE.
+:::
+
 ## Today’s roadmap {.slide-goals .smaller}
 
 1. **More loss functions:** regression, classification, fitting versus evaluation
@@ -131,42 +147,95 @@ Squared loss gives large errors relatively more influence.
 These are per-example loss curves, whose averages give MSE and MAE. Focus on growth rates rather than comparing curve heights across units. Squared loss is more sensitive to unusual target values. Absolute loss still gives unusual observations influence.
 :::
 
+## Choosing MAE or MSE {.smaller}
+
+| | MAE | MSE |
+|---|---|---|
+| Penalty | Grows linearly with error size | Grows quadratically with error size |
+| Use when… | Each extra unit of error costs the same | Large errors are disproportionately costly |
+| Extreme errors | Less sensitive | Can dominate the loss |
+| Units | Same as the target | Squared target units |
+| Optimization | Corner at zero | Smooth and differentiable |
+
+**Choose based on the cost of errors in your application.**
+
+::: {.notes}
+Connect to the delivery-time example: does one eight-minute error matter more than several three-minute errors? MAE is more robust to extreme target values, but neither loss protects against every kind of outlier, including unusual input values. An extreme error may reflect noise, a recording error, or an important rare case; investigate rather than automatically choosing to penalize it more. Both losses are continuous. Absolute loss has a corner at zero, but suitable optimization methods can still minimize MAE; squared loss is differentiable and convenient for gradient-based methods. Optimization convenience is a fitting consideration, while application costs should guide evaluation. RMSE takes the square root of MSE, restoring target units while preserving model rankings on the same evaluation data.
+:::
+
 # Classification losses
 
 The same score form can lead to different fitted coefficients
 
-## Binary classification scores {.smaller}
+## Logistic loss in terms of the score {.smaller}
 
-$$z=\mathbf w^{\mathsf T}\mathbf x+b$$
+Fix a review whose **true sentiment is positive** ($y=1$).
 
-| Model | Score and prediction | Fitting loss |
-|---|---|---|
-| Logistic regression | Sigmoid converts $z$ into $P(y=1)$ | Log loss |
-| SVM with a linear kernel | Sign of $z$ chooses the class | Hinge loss |
+$$z=\mathbf w^{\mathsf T}\mathbf x+b,
+\qquad p=P(y=1\mid\mathbf x)=\sigma(z)=\frac{1}{1+e^{-z}}$$
 
-- The decision boundary is $z=0$.
-- An SVM score is not automatically a probability.
-- Different losses can produce different coefficients.
+Substitute the sigmoid into the familiar log loss:
+
+$$L=-\log(p)=-\log\left(\frac{1}{1+e^{-z}}\right)
+=\log(1+e^{-z})$$
+
+Increasing $z$ increases the true-class probability and reduces loss.
 
 ::: {.notes}
-Connect to the RBF SVM from lecture 3, then introduce a linear kernel as another option. A linear score is shared mathematical structure, but it does not imply the same fitted model. Some SVM implementations use squared hinge rather than hinge loss. Regularization also affects fitting.
+Recall lecture 7: the linear score becomes a probability through the sigmoid. Since this review is truly positive, binary log loss selects -log(p). Taking the negative log of a reciprocal gives log(1+exp(-z)). We can now compare losses on the same raw-score axis. Throughout this comparison, keep the true class fixed as positive; for a negative example, reflect the loss curves horizontally.
 :::
 
-## One review, three loss functions {.smaller}
+## Linear SVM and hinge loss {.smaller}
 
-Fix a review whose **true sentiment is positive**.
-Positive scores favour positive sentiment.
+Both models compute $z=\mathbf w^{\mathsf T}\mathbf x+b$.
 
-| Loss | Formula for this positive review | Behaviour |
-|---|---|---|
-| Logistic | $\log(1+e^{-z})$ | Smoothly decreases |
-| Hinge | $\max(0,1-z)$ | Zero when $z\geq1$ |
-| Exponential | $e^{-z}$ | Grows rapidly for wrong scores |
+- **Same class decision rule:** positive scores favour class 1; negative scores favour class 0.
+- **Different fitting losses:** they can learn different coefficients and biases.
 
-Which curve will flatten to zero? Which grows fastest for very negative scores?
+For this **positive review** ($y=1$):
+
+$$L_{\text{logistic}}=\log(1+e^{-z}),
+\qquad L_{\text{hinge}}=\max(0,1-z)$$
+
+Hinge loss remains positive for $0<z<1$, even though the class prediction is correct.
 
 ::: {.notes}
-For this positive example, logistic loss is -log(sigmoid(z)), which simplifies to log(1+exp(-z)). These formulas assume a positive true class. For a negative example, reflect the curves horizontally. Exponential loss connects to AdaBoost and ensembles in DSCI 573. Keep the algorithm itself out of scope.
+Connect to the SVM from lecture 3: here we use a linear kernel so that the score has the same form as logistic regression. With the usual 0.5 probability threshold, logistic regression and a linear SVM both use the sign of their own score to choose a class; tie handling at zero can depend on the implementation. The fitted scores and boundaries need not match. Logistic regression converts its score to a probability; an SVM score is not automatically a probability. Regularization also affects fitting. Some implementations, including the default LinearSVC, use squared hinge rather than ordinary hinge loss. Next, explore how the two losses respond to the same score in the interactive demo.
+:::
+
+## Hinge loss vs. logistic loss
+
+```{=html}
+<iframe
+  src="img/hinge_vs_logistic.html"
+  width="100%"
+  height="570"
+  style="border: none;"
+  title="Hinge vs logistic loss">
+</iframe>
+```
+
+## Hinge loss and support vectors
+
+- Hinge loss focuses fitting on examples that are **misclassified or close to the decision boundary**, connecting to the support vectors we saw earlier.
+- For this **positive review**, once $z \geq 1$, the loss is zero: pushing its score higher brings no further benefit.
+
+::: {.notes}
+Recall that support vectors determine the SVM decision boundary. Examples inside the margin or misclassified have positive hinge loss. Examples exactly at z=1 can also be support vectors even though their hinge loss is zero. With regularization, examples beyond this threshold do not directly determine the fitted boundary. The threshold here applies to the positive review; for a negative review, hinge loss is zero when z is at most -1. No formal introduction to margins is needed here.
+:::
+
+## Exponential loss {.smaller}
+
+For the same **positive review** ($y=1$), another alternative is:
+
+$$L_{\text{exponential}}=e^{-z}$$
+
+- Negative scores are wrong for this review; their penalty grows exponentially as $z$ decreases.
+- Positive scores reduce the loss toward zero, without reaching zero at any finite score.
+- Exponential loss connects to **AdaBoost**, coming in DSCI 573.
+
+::: {.notes}
+Present exponential loss as another way to reward increasing the true-class score. Strongly wrong scores receive particularly large penalties, so mislabeled or difficult examples can have substantial influence. AdaBoost uses an additive score and exponential loss; it is not simply logistic regression with a different setting. Keep the boosting algorithm out of scope and use the next plot to compare all three shapes.
 :::
 
 ## Comparing classification losses {.model-plot .smaller}
@@ -189,6 +258,21 @@ Hinge loss reaches zero at $z=1$. Exponential loss penalizes strongly wrong scor
 
 ::: {.notes}
 The vertical lines mark the decision boundary and the hinge margin. At a positive score below one the prediction is correct but hinge loss remains positive. Log and exponential losses approach zero without reaching it at finite scores. Numerical values across these losses are not a common performance scale.
+:::
+
+## Classification losses: Behaviour and uses {.smaller}
+
+| | Logistic | Hinge | Exponential |
+|---|---|---|---|
+| Emphasis | True-class probability | Correct class with sufficient separation | Strong penalty for confidently wrong scores |
+| Zero loss ($y=1$) | Approaches zero | Zero at $z\geq1$ | Approaches zero |
+| Typical use | Logistic regression; probabilities | SVMs; class decisions | AdaBoost and related boosting methods |
+| Limitation | Confident mistakes incur large loss | Raw scores are not probabilities | Strong sensitivity to very wrong scores |
+
+**Loss choice usually comes through choosing a model or algorithm.**
+
+::: {.notes}
+Use this as practical orientation, not a claim that one loss is universally best. Logistic regression is a natural starting point when probability predictions are needed, though probabilities still need validation. SVMs focus on separation and are useful candidates when class decisions are the goal; probability estimates require an additional method. Exponential loss is mainly encountered through algorithms such as AdaBoost, rather than selected as a standalone replacement in LogisticRegression. All three can be affected by mislabeled examples; exponential loss grows fastest for strongly negative scores in this comparison. Logistic and exponential losses approach zero as z increases without reaching it for finite scores. Hinge loss reaches zero at one for the positive example. Compare candidate models on validation data using measures appropriate to the application, rather than comparing the numerical values of different fitting losses.
 :::
 
 ## iClicker: Correct prediction, positive loss? {.slide-your-turn .smaller}
@@ -264,6 +348,22 @@ Illustrative binary sentiment results from chapter exercise 8.1. Accuracy select
 # Model interpretation
 
 How do coefficients and feature values combine in a prediction?
+
+## Sentiment analysis example {.smaller}
+:::: {.columns}
+
+:::{.column width="55%"}
+![](img/lr-sentiment-analysis-ex.png)
+:::
+
+:::{.column width="45%"}
+- Logistic regression learns **coefficients for each word** from training data.  
+- Positive coefficients $\rightarrow$ push prediction toward positive class.  
+- Negative coefficients $\rightarrow$ push prediction toward negative class.  
+- In this example, positive words (_fun_, _rewarding_) outweigh the negative word (_long_), so the overall sentiment is likely **positive**.  
+:::
+
+::::
 
 ## Interpretation of coefficients
 
@@ -418,8 +518,8 @@ penguin_pipeline = make_pipeline(
 )
 ```
 
-- Reserve a stratified test set first.
-- Compare with `DummyClassifier(strategy="prior")` using training-data CV.
+- Reserve a test set first.
+- Compare with `DummyClassifier()` using training-data CV.
 - Keep imputation and scaling inside the pipeline.
 - Inspect both accuracy and log loss. Leave test data untouched.
 
