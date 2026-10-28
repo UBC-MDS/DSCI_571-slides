@@ -90,8 +90,6 @@ Suggested 80-minute pacing: opening 3, regression losses 8, classification losse
 
 How does the choice of loss change what fitting rewards?
 
-# Regression losses
-
 How strongly should a large error count?
 
 ## Your turn: Delivery-time predictions {.slide-your-turn .smaller}
@@ -381,10 +379,6 @@ How do coefficients and feature values combine in a prediction?
 ## Interpretation of coefficients
 
 [Class demo](https://github.ubc.ca/mds-2026-27/DSCI_571_sup-learn-1_students/blob/main/class-demos/demo-08-logistic-regression.ipynb)
-
-::: {.notes}
-Continue the binary sentiment example from the loss comparison: inspect coefficients, then reconstruct an individual score using count times coefficient plus intercept. Use the chapter's sentiment and housing demonstrations. Check class order, feature units after preprocessing, and what other features are held fixed. Coefficients explain the fitted calculation rather than causal effects. Next, extend the binary score-and-probability calculation to several classes.
-:::
 
 # Multiclass classification
 
