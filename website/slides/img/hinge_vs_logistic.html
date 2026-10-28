@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hinge vs logistic loss</title>
+<style>
+:root{color-scheme:light}body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;margin:0;padding:16px;color:#202631;background:white}main{max-width:850px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}h2{font-size:1.25rem;margin:0 0 8px}.subtitle{margin:0 0 12px;color:#555}input{width:100%;accent-color:#555}svg{width:100%;height:auto;display:block}.legend{display:flex;gap:24px;flex-wrap:wrap;font-size:15px}.swatch{display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:6px}.stats{display:flex;gap:20px;flex-wrap:wrap;margin:10px 0}.note{margin:8px 0 0;font-size:15px}label{font-weight:600}output{font-variant-numeric:tabular-nums;font-weight:700}button{background:white;border:1px solid #aaa;border-radius:6px;padding:5px 10px;cursor:pointer}
+</style></head><body><main>
+<h2>Hinge loss vs. logistic loss</h2><p class="subtitle">Positive example (true label y = +1) · Raw model score z = wᵀx + b</p>
+<div class="top"><label for="score">Raw score: <output id="scoreOut">0.5</output></label><button id="reset" type="button">Reset</button></div>
+<input type="range" id="score" min="-3" max="4" step="0.05" value="0.5" aria-label="Raw model score">
+<svg id="plot" viewBox="0 0 760 320" role="img" aria-label="Interactive comparison of hinge and logistic loss against raw model score"></svg>
+<div class="legend"><span><i class="swatch" style="background:#c46b17"></i>Hinge loss: max(0, 1 − z)</span><span><i class="swatch" style="background:#2166ae"></i>Logistic loss: log(1 + exp(−z))</span></div>
+<div class="stats"><span>Hinge loss: <output id="hingeOut">0.500</output></span><span>Logistic loss: <output id="logOut">0.474</output></span></div>
+<p class="note" id="interpretation" aria-live="polite"></p>
+</main><script>
+(()=>{const svg=document.getElementById('plot'),slider=document.getElementById('score');const NS='http://www.w3.org/2000/svg';const W=760,H=320,L=56,R=22,T=16,B=45;const X=z=>L+(z+3)/7*(W-L-R),Y=v=>H-B-v/4.3*(H-T-B);const hinge=z=>Math.max(0,1-z),logistic=z=>Math.log(1+Math.exp(-z));
+function add(tag,attrs={},label){const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(label!==undefined)e.textContent=label;svg.appendChild(e);return e;}
+for(let v=0;v<=4;v++){add('line',{x1:L,x2:W-R,y1:Y(v),y2:Y(v),stroke:'#dce0e5'});add('text',{x:L-10,y:Y(v)+5,'text-anchor':'end',fill:'#555','font-size':14},String(v));}
+for(let z=-3;z<=4;z++)add('text',{x:X(z),y:H-B+22,'text-anchor':'middle',fill:'#555','font-size':14},String(z));
+add('line',{x1:L,x2:W-R,y1:Y(0),y2:Y(0),stroke:'#777'});
+add('line',{x1:X(0),x2:X(0),y1:T,y2:H-B,stroke:'#999','stroke-dasharray':'4 4'});
+add('line',{x1:X(1),x2:X(1),y1:T,y2:H-B,stroke:'#c46b17','stroke-dasharray':'5 4'});
+add('text',{x:X(1)+7,y:T+13,fill:'#9b4d0d','font-size':14},'Margin = 1');
+add('text',{x:(L+W-R)/2,y:H-5,'text-anchor':'middle',fill:'#333','font-size':15},'Raw model score (z)');
+function curve(fn){let d='';for(let i=0;i<=280;i++){const z=-3+7*i/280;d+=(i?'L':'M')+X(z).toFixed(2)+','+Y(fn(z)).toFixed(2)+' ';}return d;}
+add('path',{d:curve(hinge),fill:'none',stroke:'#c46b17','stroke-width':3});add('path',{d:curve(logistic),fill:'none',stroke:'#2166ae','stroke-width':3});
+const guide=add('line',{y1:T,y2:H-B,stroke:'#777','stroke-dasharray':'3 4'});const dotH=add('circle',{r:6,fill:'#c46b17',stroke:'white','stroke-width':2});const dotL=add('circle',{r:6,fill:'#2166ae',stroke:'white','stroke-width':2});
+function update(){const z=Number(slider.value);document.getElementById('scoreOut').value=z.toFixed(2);document.getElementById('hingeOut').value=hinge(z).toFixed(3);document.getElementById('logOut').value=logistic(z).toFixed(3);guide.setAttribute('x1',X(z));guide.setAttribute('x2',X(z));dotH.setAttribute('cx',X(z));dotH.setAttribute('cy',Y(hinge(z)));dotL.setAttribute('cx',X(z));dotL.setAttribute('cy',Y(logistic(z)));document.getElementById('interpretation').textContent=z<0?'Incorrect classification: both losses penalize the prediction.':z<1?'Correct classification, but inside the SVM margin: hinge loss is still positive.':'Correct classification with sufficient margin: hinge loss is zero, but logistic loss is still positive.';}
+slider.addEventListener('input',update);document.getElementById('reset').addEventListener('click',()=>{slider.value='0.5';update();});update();})();
+</script></body></html>
