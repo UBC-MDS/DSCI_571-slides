@@ -165,8 +165,6 @@ Connect to the delivery-time example: does one eight-minute error matter more th
 
 # Classification losses
 
-The same score form can lead to different fitted coefficients
-
 ## Logistic loss in terms of the score {.smaller}
 
 Fix a review whose **true sentiment is positive** ($y=1$).
@@ -267,7 +265,6 @@ The vertical lines mark the decision boundary and the hinge margin. At a positiv
 | Emphasis | True-class probability | Correct class with sufficient separation | Strong penalty for confidently wrong scores |
 | Zero loss ($y=1$) | Approaches zero | Zero at $z\geq1$ | Approaches zero |
 | Typical use | Logistic regression; probabilities | SVMs; class decisions | AdaBoost and related boosting methods |
-| Limitation | Confident mistakes incur large loss | Raw scores are not probabilities | Strong sensitivity to very wrong scores |
 
 **Loss choice usually comes through choosing a model or algorithm.**
 
@@ -284,17 +281,47 @@ Which statements are true? Select all that apply.
 - **A.** Its predicted class is positive.
 - **B.** Its hinge loss is zero.
 - **C.** Its hinge loss is 0.5.
-- **D.** Its logistic loss is positive.
+- **D.** Increasing this review’s score from $0.5$ to $1.5$ reduces both its hinge loss and its logistic loss.
 
 ::: {.notes}
 Answers A, C, D. Hinge is max(0,1-0.5)=0.5. Logistic is log(1+exp(-0.5)), about 0.474. Prediction correctness alone does not establish that the model has achieved a large margin or low probability loss. For a negative true review, a positive score would be wrong.
 :::
 
-# Accuracy versus loss
+# Fitting loss and evaluation measures
 
-Fitting a model and evaluating its predictions
+How we learn parameters and how we assess predictions
 
-## Accuracy can stay fixed while log loss improves {.smaller}
+## Fitting versus evaluation {.smaller}
+
+| | During fitting | During evaluation |
+|---|---|---|
+| Question | Which parameters should the model learn? | How well does the model predict held-out examples? |
+| Data | Training data | Validation or test data |
+| Measure | The estimator's fitting loss | A measure chosen for the application |
+| Logistic regression example | Minimize log loss plus regularization | Assess accuracy, log loss, or both |
+
+**The fitting loss and evaluation measure can be the same or different.**
+
+::: {.notes}
+A loss quantifies prediction error and can serve either role. During fitting, the optimizer uses training loss, usually together with regularization, to learn parameters. During evaluation, we compute a chosen measure on held-out predictions. Validation results guide model and hyperparameter selection; the reserved test set assesses the selected workflow after development choices are settled. Training scores can also be computed for diagnostics, but they do not estimate performance on new examples. For cross-validation, training and validation refer to the respective portions of each fold.
+:::
+
+## Evaluating logistic regression {.smaller}
+
+Every candidate is fitted using **log loss plus regularization**.
+
+We can compare candidates on validation data using:
+
+- **Accuracy:** how often is the predicted class correct?
+- **Log loss:** how much probability is assigned to the true class?
+
+**Changing the evaluation measure changes how we rank candidates, not how each candidate fits its parameters.**
+
+::: {.notes}
+The evaluation measure can match the fitting loss: validation log loss evaluates the same kind of prediction error used during fitting, on different data and without adding the regularization penalty. It can also differ: validation accuracy evaluates class decisions even though logistic regression fits using log loss. In GridSearchCV, scoring controls candidate evaluation, not the estimator's fitting objective. A different scorer can select a different C and therefore a different final fitted model, while the fitting rule for any fixed candidate remains unchanged.
+:::
+
+## Accuracy and log loss capture different changes {.smaller}
 
 For a **truly positive review**, compare two predictions:
 
@@ -303,41 +330,27 @@ For a **truly positive review**, compare two predictions:
 | 0.20 | Negative | No | 1.609 |
 | 0.30 | Negative | No | 1.204 |
 
-- Both predictions have the same accuracy on this review.
-- Increasing the true-class probability reduces log loss.
-- Smooth changes in log loss guide logistic-regression fitting.
+- Accuracy is unchanged: both class predictions are wrong.
+- Log loss improves: the true class receives more probability.
 
 ::: {.notes}
-This binary example builds on chapter 7 without requiring multiclass probabilities. Use the usual 0.5 threshold. Losses are -log(0.2) and -log(0.3). Accuracy has flat regions and jumps as coefficients change. We return to this distinction for penguin species later.
+Use the usual 0.5 threshold. Losses are -log(0.2) and -log(0.3). This explains why two evaluation measures need not rank models the same way: accuracy only sees the class decision, while log loss also responds to probability changes. Log loss is also convenient for fitting because it changes smoothly with the score, unlike accuracy. We return to class decisions versus probabilities for penguin species later.
 :::
 
-## Fitting objective and evaluation measure {.smaller}
+## Your turn: Which model wins? {.slide-your-turn .smaller}
 
-| Stage | Data | Purpose |
-|---|---|---|
-| Fit each candidate | Training portion of each fold | Learn coefficients using the estimator’s loss and regularization |
-| Compare candidates | Validation portion of each fold | Rank candidates using the chosen scorer |
-| Final evaluation | Reserved test set | Assess the selected workflow |
+Two logistic-regression candidates, each fitted using log loss plus regularization.
 
-**A loss can also be an evaluation measure:** log loss can assess validation probabilities.
-
-::: {.notes}
-Accuracy has flat regions and jumps as coefficients change. Log loss responds smoothly to changes in true-class probability, even when the predicted class stays fixed. Logistic regression therefore fits with log loss even when we choose hyperparameters by accuracy. Specify the development scorer before final test evaluation.
-:::
-
-## Your turn: What changed inside the search? {.slide-your-turn .smaller}
-
-| `C` | Mean validation accuracy | Mean validation log loss |
+| `C` | Mean validation accuracy ↑ | Mean validation log loss ↓ |
 |---:|---:|---:|
 | 0.1 | 0.96 | 0.12 |
 | 10 | 0.97 | 0.18 |
 
-1. Which `C` wins with `scoring="accuracy"`?
-2. Which wins with `scoring="neg_log_loss"`?
-3. Does the scorer change how each candidate learns its coefficients?
+1. Which candidate wins if we evaluate using accuracy? Using log loss?
+2. Does changing the evaluation measure change either candidate's fitting loss?
 
 ::: {.notes}
-Illustrative binary sentiment results from chapter exercise 8.1. Accuracy selects C=10. Negative log loss selects C=0.1 because -0.12 is greater than -0.18. Each candidate still fits logistic loss plus its regularization penalty. If the application needs probabilities, the log-loss result supports C=0.1 despite slightly lower accuracy. The scorer can change candidate ranking and selected C.
+These are illustrative validation results. Accuracy selects C=10; log loss selects C=0.1. Neither evaluation choice changes the fitting loss: each candidate still minimizes training log loss plus its regularization penalty. The selected hyperparameter and final model can change. If the application needs probabilities, validation log loss offers evidence about their quality that accuracy alone does not provide. In GridSearchCV, use scoring="accuracy" or scoring="neg_log_loss". Scikit-learn maximizes scores, so it negates log loss: -0.12 is greater than -0.18. Choose the evaluation measure to match the application before final test evaluation.
 :::
 
 ## Course evaluations (~10 minutes)
@@ -437,22 +450,6 @@ Class order: **Adelie, Chinstrap, Gentoo**.
 Give pairs two minutes. Answers: Adelie, no, one third each, and no. A common shift cancels between numerator and denominator. This invariance permits subtracting the largest score before exponentiating, avoiding overflow. It is relative scores that matter.
 :::
 
-## Softmax in Python {.smaller}
-
-```python
-scores = np.array([2.0, 1.0, 0.0])
-weights = np.exp(scores - scores.max())
-probabilities = weights / weights.sum()
-# Or use scipy.special.softmax(scores)
-```
-
-```{python}
-pd.DataFrame({"Score": [2., 1., 0.], "Probability": softmax([2., 1., 0.])},
-             index=["Adelie", "Chinstrap", "Gentoo"]).round(3)
-```
-
-Subtracting the same value from every score leaves softmax unchanged.
-
 # Cross-entropy loss
 
 How much probability did the model assign to the true class?
@@ -493,9 +490,7 @@ Binary cross-entropy is the two-class case of multiclass cross-entropy. The same
 
 ## iClicker: Is a log loss of 1.10 good? {.slide-your-turn .smaller}
 
-A three-class model has mean **validation log loss 1.10**.
-
-A baseline assigns probability $1/3$ to each class for every example.
+A three-class model has mean **validation log loss 1.10**. ($-log(1/3) = 1.09$)
 
 Which statement is best supported?
 
