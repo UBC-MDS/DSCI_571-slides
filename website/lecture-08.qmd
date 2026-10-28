@@ -8,9 +8,9 @@ editor: { render-on-save: true }
 
 ## Slides
 
-[Download slides as PDF](slides/slides-08-multiclass-loss-functions-conclusion.pdf){.btn .btn-outline-primary .pdf-download download=""}
+[Download slides as PDF](slides/slides-08-loss-functions-multiclass.pdf){.btn .btn-outline-primary .pdf-download download=""}
 
-{{< revealjs "slides/slides-08-multiclass-loss-functions-conclusion.html" height="600px" class="ratio ratio-16x9" >}}
+{{< revealjs "slides/slides-08-loss-functions-multiclass.html" height="600px" class="ratio ratio-16x9" >}}
 
 ## Course notes
 
