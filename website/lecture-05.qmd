@@ -1,5 +1,5 @@
 ---
-publish-pdf: false
+publish-pdf: true
 title: "Lecture 5: More preprocessing and text features"
 description: " More preprocessing and text features"
 description-short: "Preprocessing pitfalls and data leakage; Handling unseen categories and high-cardinality features; Bag-of-words representations and CountVectorizer; Evaluating text pipelines and comparing with a baseline"
